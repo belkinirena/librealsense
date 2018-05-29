@@ -81,18 +81,17 @@ rs2_device_hub* rs2_create_device_hub(const rs2_context* context, rs2_error** er
 
 /**
 * \brief Frees the relevant device hub object.
-* \param[in] device hub Object that is no longer needed
-* \param context     Object representing librealsense session
+* \param[in] hub    hub Object that is no longer needed
 */
 void rs2_delete_device_hub(const rs2_device_hub* hub);
 
 /**
 * If any device is connected return it, otherwise wait until next RealSense device connects.
 * Calling this method multiple times will cycle through connected devices
-* \param[in] context The context to creat the device
-* \param[in] hub The device hub object
-* \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
-* \return            device object
+* \param[in] ctx    The context to creat the device
+* \param[in] hub    The device hub object
+* \param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored.
+* \return           Device object
 */
 rs2_device* rs2_device_hub_wait_for_device(rs2_context* ctx, const rs2_device_hub* hub, rs2_error** error);
 
