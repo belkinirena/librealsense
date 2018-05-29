@@ -75,7 +75,7 @@ namespace librealsense
         _hw_monitor->send(cmd);
     }
 
-    class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_stereo_sensor
+    class ds5_depth_sensor : public uvc_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
     {
     public:
         explicit ds5_depth_sensor(ds5_device* owner,
@@ -356,7 +356,6 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
         auto depth_ep = std::make_shared<ds5_depth_sensor>(this, std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
                                                        std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup))));
-
         depth_ep->register_xu(depth_xu); // make sure the XU is initialized every time we power the camera
 
         depth_ep->register_pixel_format(pf_z16); // Depth
@@ -478,10 +477,6 @@ namespace librealsense
                 "Enable Auto Exposure");
             depth_ep.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
 
-            depth_ep.register_option(RS2_OPTION_GAIN,
-                std::make_shared<auto_disabling_control>(
-                    std::make_shared<uvc_pu_option>(depth_ep, RS2_OPTION_GAIN),
-                    enable_auto_exposure));
 
             depth_ep.register_option(RS2_OPTION_EXPOSURE,
                 std::make_shared<auto_disabling_control>(
@@ -510,8 +505,9 @@ namespace librealsense
                 std::make_shared<asic_and_projector_temperature_options>(depth_ep,
                     RS2_OPTION_ASIC_TEMPERATURE));
         }
-
-        depth_ep.set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
+        roi_sensor_interface* roi_sensor;
+        if (roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_ep))
+            roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
 
         depth_ep.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
             lazy<float>([this]() { return get_stereo_baseline_mm(); })));
@@ -572,12 +568,12 @@ namespace librealsense
             register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
 
         std::string curr_version= _fw_version;
-        std::string latest_version = recommended_fw_version;
+        std::string minimal_version = recommended_fw_version;
 
         if (_fw_version < recommended_fw_version)
         {
             std::weak_ptr<notifications_processor> weak = depth_ep.get_notifications_processor();
-            std::thread notification_thread = std::thread([weak, curr_version, latest_version]()
+            std::thread notification_thread = std::thread([weak, curr_version, minimal_version]()
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 while (true)
@@ -585,7 +581,7 @@ namespace librealsense
                     auto ptr = weak.lock();
                     if (ptr)
                     {
-                        std::string msg = "Current firmware version: " + curr_version + "\nLatest firmware release: " + latest_version +"\n";
+                        std::string msg = "Current firmware version: " + curr_version + "\nMinimal firmware version: " + minimal_version +"\n";
                         notification n(RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED, 0, RS2_LOG_SEVERITY_INFO, msg);
                         ptr->raise_notification(n);
                     }
@@ -656,7 +652,7 @@ namespace librealsense
 
         auto& depth_ep = get_depth_sensor();
 
-        if (is_camera_in_advanced_mode())
+        if (!is_camera_in_advanced_mode())
         {
             depth_ep.remove_pixel_format(pf_y8i); // L+R
             depth_ep.remove_pixel_format(pf_y12i); // L+R

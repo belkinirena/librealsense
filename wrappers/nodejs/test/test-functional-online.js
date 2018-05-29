@@ -123,6 +123,7 @@ describe('enum value test', function() {
       'RS400_VISUAL_PRESET_HIGH_ACCURACY',
       'RS400_VISUAL_PRESET_HIGH_DENSITY',
       'RS400_VISUAL_PRESET_MEDIUM_DENSITY',
+      'RS400_VISUAL_PRESET_REMOVE_IR_PATTERN',
       'RS400_VISUAL_PRESET_COUNT',
     ];
     const strAttrs = [
@@ -132,6 +133,7 @@ describe('enum value test', function() {
       'rs400_visual_preset_high_accuracy',
       'rs400_visual_preset_high_density',
       'rs400_visual_preset_medium_density',
+      'rs400_visual_preset_remove_ir_pattern',
     ];
     numberAttrs.forEach((attr) => {
       assert.equal(typeof obj[attr], 'number');
@@ -209,6 +211,7 @@ describe('enum value test', function() {
       'NOTIFICATION_CATEGORY_HARDWARE_ERROR',
       'NOTIFICATION_CATEGORY_HARDWARE_EVENT',
       'NOTIFICATION_CATEGORY_UNKNOWN_ERROR',
+      'NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED',
     ];
     const strAttrs = [
       'notification_category_frames_timeout',
@@ -216,6 +219,7 @@ describe('enum value test', function() {
       'notification_category_hardware_error',
       'notification_category_hardware_event',
       'notification_category_unknown_error',
+      'notification_category_firmware_update_recommended',
     ];
     numberAttrs.forEach((attr) => {
       assert.equal(typeof obj[attr], 'number');
@@ -303,6 +307,7 @@ describe('enum value test', function() {
       'CAMERA_INFO_NAME',
       'CAMERA_INFO_SERIAL_NUMBER',
       'CAMERA_INFO_FIRMWARE_VERSION',
+      'CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION',
       'CAMERA_INFO_PHYSICAL_PORT',
       'CAMERA_INFO_DEBUG_OP_CODE',
       'CAMERA_INFO_ADVANCED_MODE',
@@ -314,6 +319,7 @@ describe('enum value test', function() {
       'camera_info_name',
       'camera_info_serial_number',
       'camera_info_firmware_version',
+      'camera_info_recommended_firmware_version',
       'camera_info_physical_port',
       'camera_info_debug_op_code',
       'camera_info_advanced_mode',
@@ -523,5 +529,93 @@ describe('ROI test', function() {
       }
     });
     rs2.cleanup();
+  });
+});
+
+describe('new record/playback test', function() {
+  let pipe;
+  let cfg;
+  let device;
+  const file = 'record.bag';
+
+  it('record and playback', () => {
+    // record
+    pipe = new rs2.Pipeline();
+    cfg = new rs2.Config();
+    cfg.enableRecordToFile(file);
+    pipe.start(cfg);
+    device = pipe.getActiveProfile().getDevice();
+
+    // make sure it's not a playback device
+    let playback = rs2.PlaybackDevice.from(device);
+    assert.equal(playback, undefined);
+
+    let recorder = rs2.RecorderDevice.from(device);
+    assert.equal(recorder instanceof rs2.RecorderDevice, true);
+    pipe.waitForFrames();
+    pipe.waitForFrames();
+    pipe.waitForFrames();
+    pipe.stop();
+    // make sure the recorded frames are flushed to file
+    rs2.cleanup();
+
+    assert.equal(fs.existsSync(file), true);
+
+    // playback
+    cfg = new rs2.Config();
+    cfg.enableDeviceFromFile(file);
+    pipe = new rs2.Pipeline();
+    pipe.start(cfg);
+    device = pipe.getActiveProfile().getDevice();
+    playback = rs2.PlaybackDevice.from(device);
+    assert.equal(playback instanceof rs2.PlaybackDevice, true);
+
+    // make sure it's not a RecorderDevice
+    recorder = rs2.RecorderDevice.from(device);
+    assert.equal(recorder, undefined);
+
+    let frames = pipe.waitForFrames();
+    assert.equal(frames instanceof rs2.FrameSet, true);
+    pipe.stop();
+    rs2.cleanup();
+    fs.unlinkSync(file);
+  }).timeout(5000);
+});
+
+describe('frameset misc test', function() {
+  it('get any frame twice test', () => {
+    let pipe = new rs2.Pipeline();
+    pipe.start();
+    let frames = pipe.waitForFrames();
+    let frame = frames.getFrame(rs2.stream.STREAM_ANY);
+    assert.equal(frame instanceof rs2.Frame, true);
+    frame = frames.getFrame(rs2.stream.STREAM_ANY);
+    assert.equal(frame instanceof rs2.Frame, true);
+    pipe.stop();
+    rs2.cleanup();
+  });
+});
+
+describe('post processing filter tests', function() {
+  let ctx;
+  let pipe;
+  before(function() {
+    ctx = new rs2.Context();
+    pipe = new rs2.Pipeline(ctx);
+  });
+
+  after(function() {
+    rs2.cleanup();
+  });
+
+  it('hole-filling filter test', () => {
+    pipe.start();
+    const frames = pipe.waitForFrames();
+    assert.equal(frames.size > 0, true);
+    let filter = new rs2.HoleFillingFilter();
+    let out = filter.process(frames.depthFrame);
+    assert.equal(out instanceof rs2.Frame, true);
+    assert.equal(out.isValid, true);
+    pipe.stop();
   });
 });
