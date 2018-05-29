@@ -1,7 +1,7 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
    Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-/** \file rs2_sensor.h
+/** \file rs_sensor.h
 * \brief
 * Exposes RealSense sensor functionality for C compilers
 */
@@ -185,19 +185,19 @@ void rs2_get_region_of_interest(const rs2_sensor* sensor, int* min_x, int* min_y
 
 /**
 * open subdevice for exclusive access, by committing to a configuration
-* \param[in] sensor relevant RealSense device
+* \param[in] device     relevant RealSense device
 * \param[in] profile    stream profile that defines single stream configuration
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_open(rs2_sensor* device, const rs2_stream_profile* profile, rs2_error** error);
 
 /**
 * open subdevice for exclusive access, by committing to composite configuration, specifying one or more stream profiles
 * this method should be used for interdependent  streams, such as depth and infrared, that have to be configured together
-* \param[in] sensor relevant RealSense device
-* \param[in] profiles  list of stream profiles discovered by get_stream_profiles
+* \param[in] device     relevant RealSense device
+* \param[in] profiles   list of stream profiles discovered by get_stream_profiles
 * \param[in] count      number of simultaneous  stream profiles to configure
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \param[out] error     if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_open_multiple(rs2_sensor* device, const rs2_stream_profile** profiles, int count, rs2_error** error);
 
@@ -228,7 +228,6 @@ void rs2_start_cpp(const rs2_sensor* sensor, rs2_frame_callback* callback, rs2_e
 /**
 * start streaming from specified configured sensor of specific stream to frame queue
 * \param[in] sensor  RealSense Sensor
-* \param[in] stream  specific stream type to start
 * \param[in] queue   frame-queue to store new frames into
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
@@ -243,10 +242,9 @@ void rs2_stop(const rs2_sensor* sensor, rs2_error** error);
 
 /**
 * set callback to get notifications from specified sensor
-* \param[in] sensor  RealSense device
-* \param[in] device  RealSense device
-* \param[in] callback function pointer to register as per-notifications callback
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \param[in] sensor             RealSense device
+* \param[in] on_notification    function pointer to register as per-notifications callback
+* \param[out] error             if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 void rs2_set_notifications_callback(const rs2_sensor* sensor, rs2_notification_callback_ptr on_notification, void* user, rs2_error** error);
 
@@ -260,36 +258,41 @@ void rs2_set_notifications_callback_cpp(const rs2_sensor* sensor, rs2_notificati
 
 /**
 * retrieve description from notification handle
-* \param[in] notification      handle returned from a callback
-* \return            the notification description
+* \param[in] notification   handle returned from a callback
+* \param[out] error         if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return   the notification description
 */
 const char* rs2_get_notification_description(rs2_notification* notification, rs2_error** error);
 
 /**
 * retrieve timestamp from notification handle
-* \param[in] notification      handle returned from a callback
-* \return            the notification timestamp
+* \param[in] notification   handle returned from a callback
+* \param[out] error         if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return   the notification timestamp
 */
 rs2_time_t rs2_get_notification_timestamp(rs2_notification* notification, rs2_error** error);
 
 /**
 * retrieve severity from notification handle
-* \param[in] notification      handle returned from a callback
-* \return            the notification severity
+* \param[in] notification   handle returned from a callback
+* \param[out] error         if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return   the notification severity
 */
 rs2_log_severity rs2_get_notification_severity(rs2_notification* notification, rs2_error** error);
 
 /**
 * retrieve category from notification handle
-* \param[in] notification      handle returned from a callback
-* \return            the notification category
+* \param[in] notification   handle returned from a callback
+* \param[out] error         if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return   the notification category
 */
 rs2_notification_category rs2_get_notification_category(rs2_notification* notification, rs2_error** error);
 
 /**
 * retrieve serialized data from notification handle
-* \param[in] notification      handle returned from a callback
-* \return            the serialized data (in JSON format)
+* \param[in] notification   handle returned from a callback
+* \param[out] error         if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return   the serialized data (in JSON format)
 */
 const char* rs2_get_notification_serialized_data(rs2_notification* notification, rs2_error** error);
 
