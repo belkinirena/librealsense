@@ -75,24 +75,23 @@ void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_
  * Add custom message into librealsense log
  * \param[in] severity  The log level for the message to be written under
  * \param[in] message   Message to be logged
- * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_log(rs2_log_severity severity, const char * message, rs2_error ** error);
 
 /**
 * Given the 2D depth coordinate (x,y) provide the corresponding depth in metric units
 * \param[in] frame_ref  2D depth pixel coordinates (Left-Upper corner origin)
-* \param[in] x,y  2D depth pixel coordinates (Left-Upper corner origin)
-* \param[out] float  Depth value in millimeters
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \param[in] x,y        2D depth pixel coordinates (Left-Upper corner origin)
+* \param[out] error     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return               Depth value in millimeters
 */
 float rs2_depth_frame_get_distance(const rs2_frame* frame_ref, int x, int y, rs2_error** error);
 
 /**
 * return the time at specific time point
-* \param context     Object representing librealsense session
-* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return            the time at specific time point, in live and record mode it will return the system time and in playback mode it will return the recorded time
+* \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+* \return            The time at specific time point, in live and record mode it will return the system time and in playback mode it will return the recorded time
 */
 rs2_time_t rs2_get_time( rs2_error** error);
 
