@@ -388,6 +388,7 @@ namespace rs2
             frame_ref = nullptr;
         }
 
+
     private:
         friend class rs2::frame_source;
         friend class rs2::frame_queue;
