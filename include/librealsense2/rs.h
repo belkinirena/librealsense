@@ -75,7 +75,7 @@ void rs2_log_to_file(rs2_log_severity min_severity, const char * file_path, rs2_
  * Add custom message into librealsense log
  * \param[in] severity  The log level for the message to be written under
  * \param[in] message   Message to be logged
- * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+ * \param[out] error  If non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_log(rs2_log_severity severity, const char * message, rs2_error ** error);
 
