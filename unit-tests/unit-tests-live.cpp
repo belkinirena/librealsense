@@ -2032,21 +2032,41 @@ void metadata_verification(const std::vector<internal_frame_additional_data>& da
                 CAPTURE(value);
                 CAPTURE(last_val[j]);
 
-                REQUIRE_NOTHROW((value > last_val[0]));
-                if (RS2_FRAME_METADATA_FRAME_COUNTER == j) // In addition, there shall be no frame number gaps
+                REQUIRE((value > last_val[j]));
+                if (RS2_FRAME_METADATA_FRAME_COUNTER == j && last_val[j] >= 0) // In addition, there shall be no frame number gaps
                 {
-                    REQUIRE_NOTHROW((1 == (value - last_val[j])));
+                    REQUIRE((1 == (value - last_val[j])));
                 }
 
                 last_val[j] = data[i].frame_md.md_attributes[j].second;
             }
         }
 
-        //        // Exposure time and gain values are greater than zero
-        //        if (data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_EXPOSURE].first)
-        //            REQUIRE(data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_EXPOSURE].second > 0);
-        //        if (data[i].frame_md.md_attributes[RS2_FRAME_METADATA_GAIN_LEVEL].first)
-        //            REQUIRE(data[i].frame_md.md_attributes[RS2_FRAME_METADATA_GAIN_LEVEL].second > 0);
+        // Metadata below must have a non negative value
+        auto md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_EXPOSURE];
+        if (md.first) REQUIRE(md.second >= 0);
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_GAIN_LEVEL];
+        if (md.first) REQUIRE(md.second >= 0);
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_TIME_OF_ARRIVAL];
+        if (md.first) REQUIRE(md.second >= 0);
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_BACKEND_TIMESTAMP];
+        if (md.first) REQUIRE(md.second >= 0);
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_ACTUAL_FPS];
+        if (md.first) REQUIRE(md.second >= 0);
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_POWER_LINE_FREQUENCY];
+        if (md.first) REQUIRE(md.second >= 0);
+
+        // Metadata below must have a boolean value
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_AUTO_EXPOSURE];
+        if (md.first) REQUIRE((md.second == 0 || md.second == 1));
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_FRAME_LAZER_POWER_MODE];
+        if (md.first) REQUIRE((md.second == 0 || md.second == 1));
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_AWB_TEMP];
+        if (md.first) REQUIRE((md.second == 0 || md.second == 1));
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_BACKLIGHT_COMP];
+        if (md.first) REQUIRE((md.second == 0 || md.second == 1));
+        md = data[i].frame_md.md_attributes[RS2_FRAME_METADATA_LOW_LIGHT_COMP];
+        if (md.first) REQUIRE((md.second == 0 || md.second == 1));
     }
 }
 
@@ -2164,6 +2184,7 @@ TEST_CASE("Auto disabling control behavior", "[live]") {
                 {
                     for (auto elem : { 0.f, 2.f })
                     {
+                        CAPTURE(elem);
                         REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_EMITTER_ENABLED, elem));
                         REQUIRE_NOTHROW(range = subdevice.get_option_range(RS2_OPTION_LASER_POWER));
                         REQUIRE_NOTHROW(subdevice.set_option(RS2_OPTION_LASER_POWER, range.max));
@@ -3729,7 +3750,6 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
 
                 REQUIRE_NOTHROW(subdevice.start([&](rs2::frame f)
                 {
-
                     if ((frames >= frames_before_start_measure) && (frames_additional_data.size() < frames_for_fps_measure))
                     {
                         if (first)
