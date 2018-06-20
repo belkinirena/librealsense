@@ -2,6 +2,7 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include "core/video.h"
+#include "api.h"
 #include "proc/synthetic-stream.h"
 
 namespace librealsense
@@ -21,7 +22,7 @@ namespace librealsense
         : _source_wrapper(_source)
     {
         register_option(RS2_OPTION_FRAMES_QUEUE_SIZE, _source.get_published_size_option());
-        _source.init(std::make_shared<metadata_parser_map>());
+        _source.init(std::map<rs2_extension, std::shared_ptr<metadata_parser_map>>());
     }
 
     void processing_block::invoke(frame_holder f)
@@ -95,7 +96,7 @@ namespace librealsense
         data.timestamp_domain = original->get_frame_timestamp_domain();
         data.metadata_size = 0;
         data.system_time = _actual_source.get_time();
-
+        data.metadata_blob = original->get_metadata_blob();
         auto width = new_width;
         auto height = new_height;
         auto bpp = new_bpp * 8;
@@ -130,6 +131,9 @@ namespace librealsense
         vf = static_cast<video_frame*>(res);
         vf->assign(width, height, stride, bpp);
         vf->set_sensor(original->get_sensor());
+        std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> metadata_parsers_map;
+        auto sensor_type = original->get_sensor()->get_sensor_type();
+        res->get_owner()->set_md_parsers(sensor_type, original->get_owner()->get_md_parsers(sensor_type));
         res->set_stream(stream);
 
         if (frame_type == RS2_EXTENSION_DEPTH_FRAME)
