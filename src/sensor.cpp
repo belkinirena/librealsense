@@ -12,6 +12,7 @@
 #include "stream.h"
 #include "sensor.h"
 #include "api.h"
+#include "software-device.h"
 
 namespace librealsense
 {
@@ -92,6 +93,7 @@ namespace librealsense
         if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::depth_sensor)) return RS2_EXTENSION_DEPTH_SENSOR;
         else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::depth_stereo_sensor)) return RS2_EXTENSION_DEPTH_STEREO_SENSOR;
         else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::video_sensor_interface)) return RS2_EXTENSION_VIDEO;
+        else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::software_sensor)) return RS2_EXTENSION_SOFTWARE_SENSOR;
         else return RS2_EXTENSION_UNKNOWN;
     }
     std::shared_ptr<notifications_processor> sensor_base::get_notifications_processor()

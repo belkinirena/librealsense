@@ -130,12 +130,15 @@ namespace librealsense
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         vf = static_cast<video_frame*>(res);
         vf->assign(width, height, stride, bpp);
-        vf->set_sensor(original->get_sensor());
+        auto original_sensor = original->get_sensor();
+        vf->set_sensor(original_sensor);
         std::map<rs2_extension, std::shared_ptr<metadata_parser_map>> metadata_parsers_map;
-        auto sensor_type = original->get_sensor()->get_sensor_type();
-        res->get_owner()->set_md_parsers(sensor_type, original->get_owner()->get_md_parsers(sensor_type));
+        if (original_sensor)
+        {
+            auto sensor_type = original_sensor->get_sensor_type();
+            res->get_owner()->set_md_parsers(sensor_type, original->get_owner()->get_md_parsers(sensor_type));
+        }
         res->set_stream(stream);
-
         if (frame_type == RS2_EXTENSION_DEPTH_FRAME)
         {
             original->acquire();
