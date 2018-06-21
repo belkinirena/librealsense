@@ -95,6 +95,7 @@ namespace librealsense
         else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::video_sensor_interface)) return RS2_EXTENSION_VIDEO;
         else if (VALIDATE_INTERFACE_NO_THROW(this, librealsense::software_sensor)) return RS2_EXTENSION_SOFTWARE_SENSOR;
         else return RS2_EXTENSION_UNKNOWN;
+        //TODO: Add support for fisheye sensor type
     }
     std::shared_ptr<notifications_processor> sensor_base::get_notifications_processor()
     {

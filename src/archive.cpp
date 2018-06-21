@@ -48,7 +48,7 @@ namespace librealsense
     void frame::set_sensor(std::shared_ptr<sensor_interface> s) 
     { 
         sensor = s;
-        if (s) _sensor_type = s->get_sensor_type();;
+        if (s) _sensor_type = s->get_sensor_type();
     }
 
     float3* points::get_vertices()

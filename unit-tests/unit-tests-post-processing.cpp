@@ -152,6 +152,11 @@ void compare_frame_md(rs2::frame origin_depth, rs2::frame result_depth)
         REQUIRE(origin_supported == result_supported);
         if (origin_supported && result_supported)
         {
+            //FRAME_TIMESTAMP and SENSOR_TIMESTAMP metadatas are not included in post proccesing frames,
+            //TIME_OF_ARRIVAL continues to increase  after post proccesing
+            if (i == RS2_FRAME_METADATA_FRAME_TIMESTAMP ||
+                i == RS2_FRAME_METADATA_SENSOR_TIMESTAMP ||
+                i == RS2_FRAME_METADATA_TIME_OF_ARRIVAL) continue;
             rs2_metadata_type origin_val = origin_depth.get_frame_metadata((rs2_frame_metadata_value)i);
             rs2_metadata_type result_val = result_depth.get_frame_metadata((rs2_frame_metadata_value)i);
             REQUIRE(origin_val == result_val);
