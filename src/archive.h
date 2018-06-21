@@ -205,7 +205,7 @@ namespace librealsense
         {
             return first()->get_sensor();
         }
-        std::array<uint8_t, MAX_META_DATA_SIZE> get_metadata_blob() const
+        std::array<uint8_t, MAX_META_DATA_SIZE> get_metadata_blob() const override
         {
             return first()->get_metadata_blob();
         }
