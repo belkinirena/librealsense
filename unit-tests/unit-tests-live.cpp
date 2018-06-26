@@ -4670,9 +4670,7 @@ TEST_CASE("Post-Processing Filters metadata validation", "[live][post-processing
         else
         {
             REQUIRE(pipeline_default_configurations.at(PID).streams.size() > 0);
-
             REQUIRE_NOTHROW(pipe.start(cfg));
-
             for (auto i = 0; i < 30; i++)
             {
                 for (auto filter : filters)
@@ -4686,6 +4684,7 @@ TEST_CASE("Post-Processing Filters metadata validation", "[live][post-processing
                     compare_frame_md(depth, filtered_depth);
                 }
             }
+            REQUIRE_NOTHROW(pipe.stop());
         }
     }
 }
