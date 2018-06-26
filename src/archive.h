@@ -80,7 +80,6 @@ namespace librealsense
         rs2_timestamp_domain get_frame_timestamp_domain() const override;
         void set_timestamp(double new_ts) override { additional_data.timestamp = new_ts; }
         unsigned long long get_frame_number() const override;
-        std::array<uint8_t, MAX_META_DATA_SIZE> get_metadata_blob() const override;
         void set_timestamp_domain(rs2_timestamp_domain timestamp_domain) override
         {
             additional_data.timestamp_domain = timestamp_domain;
@@ -205,10 +204,7 @@ namespace librealsense
         {
             return first()->get_sensor();
         }
-        std::array<uint8_t, MAX_META_DATA_SIZE> get_metadata_blob() const override
-        {
-            return first()->get_metadata_blob();
-        }
+
     };
 
     MAP_EXTENSION(RS2_EXTENSION_COMPOSITE_FRAME, librealsense::composite_frame);

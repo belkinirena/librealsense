@@ -90,13 +90,7 @@ namespace librealsense
             vf = static_cast<video_frame*>(original);
         }
 
-        frame_additional_data data{};
-        data.frame_number = original->get_frame_number();
-        data.timestamp = original->get_frame_timestamp();
-        data.timestamp_domain = original->get_frame_timestamp_domain();
-        data.metadata_size = 0;
-        data.system_time = _actual_source.get_time();
-        data.metadata_blob = original->get_metadata_blob();
+        frame_additional_data data = vf->additional_data;
         auto width = new_width;
         auto height = new_height;
         auto bpp = new_bpp * 8;
