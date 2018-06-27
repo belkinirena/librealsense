@@ -2956,6 +2956,7 @@ static const std::map< dev_type, device_profiles> pipeline_default_configuration
 /* RS400/PSR*/          { { "0AD1", true}  ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true}},
 /* RS410/ASR*/          { { "0AD2", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 1280, 720, 0 } }, 30, true }},
 /* D410/USB2*/          { { "0AD2", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_INFRARED, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
+/* D430/USB2*/          { { "0AD6", false } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 } }, 30, true } },
 /* RS415/ASRC*/         { { "0AD3", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true }},
 /* D415/USB2*/          { { "0AD3", false },{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 640, 480, 0 } }, 15, true } },
 /* RS430/AWG*/          { { "0AD4", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 1280, 720, 0 } }, 30, true }},
@@ -4657,19 +4658,22 @@ TEST_CASE("Post-Processing Filters metadata validation", "[live][post-processing
 
         std::vector<std::shared_ptr<rs2::process_interface>> filters =
         { std::make_shared<rs2::decimation_filter>(),
-            std::make_shared<rs2::disparity_transform>(true),
-            std::make_shared<rs2::spatial_filter>(),
-            std::make_shared<rs2::temporal_filter>(),
-            std::make_shared<rs2::disparity_transform>(false),
-            std::make_shared<rs2::hole_filling_filter>() };
+          std::make_shared<rs2::disparity_transform>(true),
+          std::make_shared<rs2::spatial_filter>(),
+          std::make_shared<rs2::temporal_filter>(),
+          std::make_shared<rs2::disparity_transform>(false),
+          std::make_shared<rs2::hole_filling_filter>() };
 
-        if (pipeline_default_configurations.end() == pipeline_default_configurations.find(PID))
+        auto configurations = pipeline_default_configurations;
+        if (configurations.end() == configurations.find(PID))
         {
             WARN("Skipping test - the Device-Under-Test profile is not defined for PID " << PID.first << (PID.second ? " USB3" : " USB2"));
         }
         else
         {
             REQUIRE(pipeline_default_configurations.at(PID).streams.size() > 0);
+            for (auto req : configurations[PID].streams)
+                REQUIRE_NOTHROW(cfg.enable_stream(req.stream, req.index, req.width, req.height, req.format, configurations[PID].fps));
             REQUIRE_NOTHROW(pipe.start(cfg));
             for (auto i = 0; i < 30; i++)
             {
