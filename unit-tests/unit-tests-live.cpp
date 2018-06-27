@@ -531,6 +531,7 @@ TEST_CASE("Sync start stop", "[live]") {
         REQUIRE(image.get_height() == other_video.height());
     }
 }
+
 TEST_CASE("Device metadata enumerates correctly", "[live]")
 {
     rs2::context ctx;
