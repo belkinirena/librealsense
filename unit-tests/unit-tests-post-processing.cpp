@@ -179,7 +179,6 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
         {
             CAPTURE(ppf_test.first);
             CAPTURE(ppf_test.second);
-
             WARN("PPF test " << ppf_test.first << "[" << ppf_test.second << "]");
 
             // Load the data from configuration and raw frame files
