@@ -563,7 +563,7 @@ namespace rs2
                             if (ImGui::SliderFloat(id.c_str(), &value,
                                 range.min, range.max, "%.4f"))
                             {
-                                auto loffset = fmod(value, range.step);
+                                auto loffset = std::abs(fmod(value, range.step));
                                 auto roffset = range.step - loffset;
                                 if (value >= 0)
                                     value = (loffset < roffset) ? value - loffset : value + roffset;
