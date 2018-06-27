@@ -568,7 +568,7 @@ namespace rs2
                                 if (value >= 0)
                                     value = (loffset < roffset) ? value - loffset : value + roffset;
                                 else
-                                    value = (loffset < roffset) ? value + loffset : value - roffset;
+                                    value = (loffset < roffset) ? value + loffset : value - roffset; 
                                 value = (value < range.min) ? range.min : value;
                                 value = (value > range.max) ? range.max : value;
                                 model.add_log(to_string() << "Setting " << opt << " to " << value);
