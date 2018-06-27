@@ -119,7 +119,7 @@ namespace librealsense
             height = vf->get_height();
         }
 
-        frame_additional_data data = ((frame*)original)->additional_data;
+        frame_additional_data data = original->get_frame_additional_data();
         auto res = _actual_source.alloc_frame(frame_type, stride * height, data, true);
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         vf = static_cast<video_frame*>(res);
