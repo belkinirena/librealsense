@@ -4635,9 +4635,6 @@ void compare_frame_md(rs2::frame origin_depth, rs2::frame result_depth)
         }
     }
 }
-
-// The test is intended to check the results of filters applied on a sequence of frames, specifically the temporal filter
-// that preserves an internal state. The test utilizes rosbag recordings
 TEST_CASE("Post-Processing Filters metadata validation", "[live][post-processing-filters]")
 {
     rs2::context ctx;
