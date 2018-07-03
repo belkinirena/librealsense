@@ -88,8 +88,8 @@ namespace librealsense
     public:
         std::vector<byte> data;
         frame_additional_data additional_data;
-        std::shared_ptr<metadata_parser_map> _metadata_parsers;
-        explicit frame() : ref_count(0), _kept(false), owner(nullptr), on_release(), _metadata_parsers(nullptr) {}
+        std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
+        explicit frame() : ref_count(0), _kept(false), owner(nullptr), on_release() {}
         frame(const frame& r) = delete;
         frame(frame&& r)
             : ref_count(r.ref_count.exchange(0)), _kept(r._kept.exchange(false)),
