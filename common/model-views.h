@@ -434,7 +434,7 @@ namespace rs2
         fps_calc            fps;
         rect                roi_display_rect{};
         frame_metadata      frame_md;
-        bool                metadata_displayed  = false;
+        bool                metadata_displayed  = true;
         bool                capturing_roi       = false;    // active modification of roi
         std::shared_ptr<subdevice_model> dev;
         float _frame_timeout = 5000.0f;
