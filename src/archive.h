@@ -97,7 +97,7 @@ namespace librealsense
         {
             *this = std::move(r);
             if (owner) _metadata_parsers = owner->get_md_parsers();
-            if (r._metadata_parsers) _metadata_parsers = r._metadata_parsers;
+            if (r._metadata_parsers) _metadata_parsers = std::move(r._metadata_parsers);
         }
 
         frame& operator=(const frame& r) = delete;
@@ -111,7 +111,7 @@ namespace librealsense
             additional_data = std::move(r.additional_data);
             r.owner.reset();
             if (owner) _metadata_parsers = owner->get_md_parsers();
-            if (r._metadata_parsers) _metadata_parsers = r._metadata_parsers;
+            if (r._metadata_parsers) _metadata_parsers = std::move(r._metadata_parsers);
             return *this;
         }
 

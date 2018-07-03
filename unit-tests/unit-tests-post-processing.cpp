@@ -160,7 +160,6 @@ void compare_frame_md(rs2::frame origin_depth, rs2::frame result_depth)
             rs2_metadata_type origin_val = origin_depth.get_frame_metadata((rs2_frame_metadata_value)i);
             rs2_metadata_type result_val = result_depth.get_frame_metadata((rs2_frame_metadata_value)i);
             REQUIRE(origin_val == result_val);
-            std::cout << "i : " << i  << "   origin_val : " << origin_val << std::endl;
         }
     }
 }
@@ -312,10 +311,11 @@ TEST_CASE("Post-Processing Filters metadata validation", "[software-device][post
             size_t frames = (test_cfg.frames_sequence_size > 1) ? test_cfg.frames_sequence_size : 1;
             for (auto i = 0; i < frames; i++)
             {
-                // Inject input frame
+                //set next frames metadata
                 for (auto i = 0; i < rs2_frame_metadata_value::RS2_FRAME_METADATA_COUNT; i++)
                     depth_sensor.set_metadata((rs2_frame_metadata_value)i, rand());
 
+                // Inject input frame
                 depth_sensor.on_video_frame({ test_cfg._input_frames[i].data(), // Frame pixels from capture API
                     [](void*) {},                   // Custom deleter (if required)
                     (int)test_cfg.input_res_x *depth_bpp,    // Stride

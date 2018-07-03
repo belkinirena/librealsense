@@ -104,11 +104,13 @@ rs2_sensor* rs2_software_device_add_sensor(rs2_device* dev, const char* sensor_n
 void rs2_software_sensor_on_video_frame(rs2_sensor* sensor, rs2_software_video_frame frame, rs2_error** error);
 
 /**
-* Inject frame to software sonsor
+* Set frame metadata for the upcoming frames
 * \param[in] sensor the software sensor
+* \param[in] value metadata key to set
+* \param[in] type metadata value
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_software_sensor_set_metadata(rs2_sensor* sensor, rs2_frame_metadata_value key, rs2_metadata_type value, rs2_error** error);
+void rs2_software_sensor_set_metadata(rs2_sensor* sensor, rs2_frame_metadata_value value, rs2_metadata_type type, rs2_error** error);
 
 /**
  * Set the wanted matcher type that will be used by the syncer
