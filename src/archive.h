@@ -88,7 +88,7 @@ namespace librealsense
     public:
         std::vector<byte> data;
         frame_additional_data additional_data;
-        std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
+        std::shared_ptr<metadata_parser_map> metadata_parsers = nullptr;
         explicit frame() : ref_count(0), _kept(false), owner(nullptr), on_release() {}
         frame(const frame& r) = delete;
         frame(frame&& r)
@@ -96,8 +96,8 @@ namespace librealsense
             owner(r.owner), on_release()
         {
             *this = std::move(r);
-            if (owner) _metadata_parsers = owner->get_md_parsers();
-            if (r._metadata_parsers) _metadata_parsers = std::move(r._metadata_parsers);
+            if (owner) metadata_parsers = owner->get_md_parsers();
+            if (r.metadata_parsers) metadata_parsers = std::move(r.metadata_parsers);
         }
 
         frame& operator=(const frame& r) = delete;
@@ -110,8 +110,8 @@ namespace librealsense
             on_release = std::move(r.on_release);
             additional_data = std::move(r.additional_data);
             r.owner.reset();
-            if (owner) _metadata_parsers = owner->get_md_parsers();
-            if (r._metadata_parsers) _metadata_parsers = std::move(r._metadata_parsers);
+            if (owner) metadata_parsers = owner->get_md_parsers();
+            if (r.metadata_parsers) metadata_parsers = std::move(r.metadata_parsers);
             return *this;
         }
 

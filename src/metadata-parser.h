@@ -33,6 +33,7 @@ namespace librealsense
         virtual ~md_attribute_parser_base() = default;
     };
 
+    /**\brief metadata parser class - support metadata in format: rs2_frame_metadata_value, rs2_metadata_type */
     class md_constant_parser : public md_attribute_parser_base
     {
     public:

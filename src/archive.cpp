@@ -387,12 +387,12 @@ namespace librealsense
 
     rs2_metadata_type frame::get_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
     {
-        if (!_metadata_parsers)
+        if (!metadata_parsers)
             throw invalid_value_exception(to_string() << "metadata not available for "
                 << get_string(get_stream()->get_stream_type()) << " stream");
 
-        auto it = _metadata_parsers.get()->find(frame_metadata);
-        if (it == _metadata_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
+        auto it = metadata_parsers.get()->find(frame_metadata);
+        if (it == metadata_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
             throw invalid_value_exception(to_string() << get_string(frame_metadata)
                 << " attribute is not applicable for "
                 << get_string(get_stream()->get_stream_type()) << " stream ");
@@ -404,11 +404,11 @@ namespace librealsense
     bool frame::supports_frame_metadata(const rs2_frame_metadata_value& frame_metadata) const
     {
         // verify preconditions
-        if (!_metadata_parsers)
+        if (!metadata_parsers)
             return false;                         // No parsers are available or no metadata was attached
 
-        auto it = _metadata_parsers.get()->find(frame_metadata);
-        if (it == _metadata_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
+        auto it = metadata_parsers.get()->find(frame_metadata);
+        if (it == metadata_parsers.get()->end())          // Possible user error - md attribute is not supported by this frame type
             return false;
 
         return it->second->supports(*this);

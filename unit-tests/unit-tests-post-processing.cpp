@@ -246,7 +246,7 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
                     (rs2_time_t)frame_number + i,      // Timestamp
                     RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME,   // Clock Domain
                     frame_number,                       // Frame# for potential sync services
-                    depth_stream_profile});            // Depth stream profile
+                    depth_stream_profile });            // Depth stream profile
 
                 rs2::frameset fset = sync.wait_for_frames();
                 REQUIRE(fset);
@@ -258,7 +258,6 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
 
                 // Compare the resulted frame versus input
                 validate_ppf_results(depth, filtered_depth, test_cfg, i);
-                compare_frame_md(depth, filtered_depth);
             }
         }
     }
@@ -333,7 +332,7 @@ TEST_CASE("Post-Processing Filters metadata validation", "[software-device][post
                 // ... here the actual filters are being applied
                 auto filtered_depth = ppf.process(depth);
 
-                // Compare the resulted frame versus input
+                // Compare the resulted frame metadata versus input
                 compare_frame_md(depth, filtered_depth);
             }
         }

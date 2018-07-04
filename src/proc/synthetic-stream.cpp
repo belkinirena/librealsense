@@ -118,11 +118,13 @@ namespace librealsense
         {
             height = vf->get_height();
         }
-        frame_additional_data data = (static_cast<frame*>(original))->additional_data;
+        
+        auto of = dynamic_cast<frame*>(original);
+        frame_additional_data data = of->additional_data;
         auto res = _actual_source.alloc_frame(frame_type, stride * height, data, true);
         if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");
         vf = static_cast<video_frame*>(res);
-        vf->_metadata_parsers = static_cast<frame*>(original)->_metadata_parsers;
+        vf->metadata_parsers = of->metadata_parsers;
         vf->assign(width, height, stride, bpp);
         vf->set_sensor(original->get_sensor());
         res->set_stream(stream);
