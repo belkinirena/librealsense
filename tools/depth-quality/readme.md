@@ -38,6 +38,13 @@ You should be able to easily get and interpret several of the depth quality metr
 ### Fill Rate
 the percentage of valid (non-zero) pixels within the user-defined Region of Interest (ROI) area.
 
+### Distance To Target
+the distance between the device to the centroid of the calculated plane.
+_N_ - Plane normal
+_P_ - Plane centroid
+_DU_ - Number of meters represented by a single depth unit
+![](./res/distance.gif)
+
 ### Plane Fit RMS Error
 the metrics represents depth pixels deviation from the calculated Plane Fit.
 _Dist<sub>i</sub>_ - Distance from depth pixel coordinates to the Plane Fit (mm).  
