@@ -39,8 +39,8 @@ You should be able to easily get and interpret several of the depth quality metr
 the percentage of valid (non-zero) pixels within the user-defined Region of Interest (ROI) area.
 
 ### Distance To Target
-estimated distance to an average within the ROI of the target (wall) in mm.
-_N_ - Normal of the fitted plane
+estimated distance to an average within the ROI of the target (wall) in mm.  
+_N_ - Normal of the fitted plane  
 _P_ - Center of the depth sensor's ROI(centroid)  
 
 ![](./res/distance.gif)
