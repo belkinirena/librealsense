@@ -42,6 +42,7 @@ the percentage of valid (non-zero) pixels within the user-defined Region of Inte
 the distance between the device to the calculated fitted plane.  
 _N_ - Fitted plane normal  
 _P_ - Center of the depth sensor's ROI(centroid)  
+
 ![](./res/distance.gif)
 
 ### Plane Fit RMS Error
