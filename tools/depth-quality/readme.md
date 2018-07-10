@@ -41,7 +41,7 @@ the percentage of valid (non-zero) pixels within the user-defined Region of Inte
 ### Distance To Target
 estimated distance to an average within the ROI of the target (wall) in mm.  
 _N_ - Normal of the fitted plane  
-_P_ - Center of the depth sensor's ROI(centroid)  
+_P_ - Center of ROI(centroid)  
 
 ![](./res/distance.gif)
 
