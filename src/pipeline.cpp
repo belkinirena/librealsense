@@ -619,6 +619,19 @@ namespace librealsense
         return false;
     }
 
+    bool pipeline::try_wait_for_frames(frame_holder* frame, unsigned int timeout_ms)
+    {
+        try
+        {
+            *frame = wait_for_frames(timeout_ms);
+        }
+        catch (const std::runtime_error& e)
+        {
+            return false;
+        }
+        return true;
+    }
+
     std::shared_ptr<device_interface> pipeline::wait_for_device(const std::chrono::milliseconds& timeout, const std::string& serial)
     {
         // Pipeline's device selection shall be deterministic

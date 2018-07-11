@@ -131,6 +131,8 @@ rs2_frame* rs2_wait_for_frame(rs2_frame_queue* queue, unsigned int timeout_ms, r
 */
 int rs2_poll_for_frame(rs2_frame_queue* queue, rs2_frame** output_frame, rs2_error** error);
 
+int rs2_try_wait_for_frame(rs2_frame_queue* queue, unsigned int timeout_ms, rs2_frame** output_frame, rs2_error** error);
+
 /**
 * enqueue new frame into a queue
 * \param[in] frame frame handle to enqueue (this operation passed ownership to the queue)

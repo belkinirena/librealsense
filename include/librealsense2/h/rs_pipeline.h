@@ -73,6 +73,7 @@ extern "C" {
     */
     int rs2_pipeline_poll_for_frames(rs2_pipeline* pipe, rs2_frame** output_frame, rs2_error ** error);
 
+    int rs2_pipeline_try_wait_for_frames(rs2_pipeline* pipe, rs2_frame** output_frame, unsigned int timeout_ms, rs2_error ** error);
 
     /**
     * Delete a pipeline instance.
