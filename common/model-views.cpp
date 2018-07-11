@@ -3170,7 +3170,6 @@ namespace rs2
                 {
                     auto index = 0;
                     while (syncer_queue.try_wait_for_frame(&frm, 30) && ++index <= syncer_queue.capacity())
-                    //while (syncer_queue.poll_for_frame(&frm) && ++index <= syncer_queue.capacity())
                     {
                         processing_block.invoke(frm);
                     }
@@ -3186,7 +3185,6 @@ namespace rs2
                     {
                         frame frm;
                         if (q.second.try_wait_for_frame(&frm, 30))
-                        //if (q.second.poll_for_frame(&frm))
                         {
                             processing_block.invoke(frm);
                         }
