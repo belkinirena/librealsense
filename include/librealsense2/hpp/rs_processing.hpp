@@ -406,8 +406,8 @@ namespace rs2
 
         /**
         * Wait until coherent set of frames becomes available
-        * \param[in] timeout_ms   Max time in milliseconds to wait until an available frame
-        * \param[out] fs      New coherent frame-set
+        * \param[in] timeout_ms     Max time in milliseconds to wait until an available frame
+        * \param[out] fs            New coherent frame-set
         * \return true if new frame-set was stored to result
         */
         bool try_wait_for_frames(frameset* fs, unsigned int timeout_ms = 5000) const

@@ -82,9 +82,9 @@ extern "C" {
     * The application can maintain the frames handles to defer processing. However, if the application maintains too long history, the device
     * may lack memory resources to produce new frames, and the following call to this method shall fail to retrieve new frames, until resources
     * are retained.
-    * \param[in] pipe the pipeline
-    * \param[in] timeout_ms   Max time in milliseconds to wait until a frame becomes available
-    * \param[out] output_frame frame handle to be released using rs2_release_frame
+    * \param[in] pipe           the pipeline
+    * \param[in] timeout_ms     max time in milliseconds to wait until a frame becomes available
+    * \param[out] output_frame  frame handle to be released using rs2_release_frame
     * \param[out] error         if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return true if new frame was stored to output_frame
     */
