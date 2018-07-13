@@ -4372,6 +4372,7 @@ TEST_CASE("Pipeline record and playback", "[live][pipeline][using_pipeline][!may
     }
 }
 
+
 TEST_CASE("Pipeline enable bad configuration", "[pipeline][using_pipeline]")
 {
     rs2::context ctx;
