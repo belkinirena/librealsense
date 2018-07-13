@@ -624,7 +624,7 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_mtx);
         if (!_active_profile)
         {
-            throw librealsense::wrong_api_call_sequence_exception("wait_for_frames cannot be called before start()");
+            throw librealsense::wrong_api_call_sequence_exception("try_wait_for_frames cannot be called before start()");
         }
 
         if (_pipeline_process->dequeue(frame, timeout_ms))
