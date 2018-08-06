@@ -106,13 +106,33 @@ namespace librealsense
     {
         named_mutex::named_mutex(const std::string& device_path, unsigned timeout)
             : _device_path(device_path),
-              _timeout(timeout) // TODO: try to lock with timeout
+            _timeout(timeout), // TODO: try to lock with timeout
+            _fildes(-1)
         {
-            create_named_mutex(_device_path);
+        }
+
+        void named_mutex::lock()
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            acquire();
+        }
+
+        void named_mutex::unlock()
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            release();
         }
 
         bool named_mutex::try_lock()
         {
+            std::lock_guard<std::mutex> lock(_mutex);
+            if (-1 == _fildes)
+            {
+                _fildes = open(_device_path.c_str(), O_RDWR, 0); //TODO: check
+                if (_fildes < 0)
+                    return false;
+            }
+
             auto ret = lockf(_fildes, F_TLOCK, 0);
             if (ret != 0)
                 return false;
@@ -120,57 +140,39 @@ namespace librealsense
             return true;
         }
 
-        named_mutex::~named_mutex()
-        {
-            try{
-                destroy_named_mutex();
-            }
-            catch(...)
-            {
-
-            }
-        }
-
         void named_mutex::acquire()
         {
+            if (-1 == _fildes)
+            {
+                _fildes = open(_device_path.c_str(), O_RDWR, 0); //TODO: check
+                if (0 > _fildes)
+                    throw linux_backend_exception(to_string() << "Cannot open '" << _device_path);
+            }
+
             auto ret = lockf(_fildes, F_LOCK, 0);
-            if (ret != 0)
+            if (0 != ret)
                 throw linux_backend_exception(to_string() << "Acquire failed");
         }
 
         void named_mutex::release()
         {
-            auto ret = lockf(_fildes, F_ULOCK, 0);
-            if (ret != 0)
-                throw linux_backend_exception(to_string() << "lockf(...) failed");
-        }
-
-        void named_mutex::create_named_mutex(const std::string& cam_id)
-        {
-            const auto max_retries = 10;
-
-            for(auto i=0; i< max_retries; i++)
-            {
-                _fildes = open(cam_id.c_str(), O_RDWR);
-                if (0 <= _fildes)
-                    break;
-
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            }
             if (-1 == _fildes)
-                throw linux_backend_exception(to_string() << "open(...) failed");
-        }
+                return;
 
-        void named_mutex::destroy_named_mutex()
-        {
-            auto ret = close(_fildes);
+            auto ret = lockf(_fildes, F_ULOCK, 0);
+            if (0 != ret)
+                throw linux_backend_exception(to_string() << "lockf(...) failed");
+
+            ret = close(_fildes);
             if (0 != ret)
                 throw linux_backend_exception(to_string() << "close(...) failed");
+
+            _fildes = -1;
         }
 
         static int xioctl(int fh, int request, void *arg)
         {
-            int r=0;
+            int r = 0;
             do {
                 r = ioctl(fh, request, arg);
             } while (r < 0 && errno == EINTR);
@@ -185,7 +187,7 @@ namespace librealsense
             buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
             buf.memory = use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
             buf.index = index;
-            if(xioctl(fd, VIDIOC_QUERYBUF, &buf) < 0)
+            if (xioctl(fd, VIDIOC_QUERYBUF, &buf) < 0)
                 throw linux_backend_exception("xioctl(VIDIOC_QUERYBUF) failed");
 
             _original_length = buf.length;
@@ -193,15 +195,15 @@ namespace librealsense
             if (use_memory_map)
             {
                 _start = static_cast<uint8_t*>(mmap(NULL, buf.length,
-                                                    PROT_READ | PROT_WRITE, MAP_SHARED,
-                                                    fd, buf.m.offset));
-                if(_start == MAP_FAILED)
+                    PROT_READ | PROT_WRITE, MAP_SHARED,
+                    fd, buf.m.offset));
+                if (_start == MAP_FAILED)
                     throw linux_backend_exception("mmap failed");
             }
             else
             {
                 _length += MAX_META_DATA_SIZE;
-                _start = static_cast<uint8_t*>(malloc( buf.length + MAX_META_DATA_SIZE));
+                _start = static_cast<uint8_t*>(malloc(buf.length + MAX_META_DATA_SIZE));
                 if (!_start) throw linux_backend_exception("User_p allocation failed!");
                 memset(_start, 0, _length);
             }
@@ -215,11 +217,11 @@ namespace librealsense
             buf.index = _index;
             buf.length = _length;
 
-            if ( !_use_memory_map )
+            if (!_use_memory_map)
             {
                 buf.m.userptr = (unsigned long)_start;
             }
-            if(xioctl(fd, VIDIOC_QBUF, &buf) < 0)
+            if (xioctl(fd, VIDIOC_QBUF, &buf) < 0)
                 throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
         }
 
@@ -227,12 +229,12 @@ namespace librealsense
         {
             if (_use_memory_map)
             {
-               if(munmap(_start, _length) < 0)
-                   linux_backend_exception("munmap");
+                if (munmap(_start, _length) < 0)
+                    linux_backend_exception("munmap");
             }
             else
             {
-               free(_start);
+                free(_start);
             }
         }
 
@@ -268,7 +270,7 @@ namespace librealsense
             }
         }
 
-        static std::tuple<std::string,uint16_t>  get_usb_descriptors(libusb_device* usb_device)
+        static std::tuple<std::string, uint16_t>  get_usb_descriptors(libusb_device* usb_device)
         {
             auto usb_bus = std::to_string(libusb_get_bus_number(usb_device));
 
@@ -280,14 +282,14 @@ namespace librealsense
             auto usb_dev = std::to_string(libusb_get_device_address(usb_device));
             auto speed = libusb_get_device_speed(usb_device);
             libusb_device_descriptor dev_desc;
-            auto r= libusb_get_device_descriptor(usb_device,&dev_desc);
+            auto r = libusb_get_device_descriptor(usb_device, &dev_desc);
 
             for (size_t i = 0; i < port_count; ++i)
             {
-                port_path << std::to_string(usb_ports[i]) << (((i+1) < port_count)?".":"");
+                port_path << std::to_string(usb_ports[i]) << (((i + 1) < port_count) ? "." : "");
             }
 
-            return std::make_tuple(usb_bus + "-" + port_path.str() + "-" + usb_dev,dev_desc.bcdUSB);
+            return std::make_tuple(usb_bus + "-" + port_path.str() + "-" + usb_dev, dev_desc.bcdUSB);
         }
 
         // retrieve the USB specification attributed to a specific USB device.
@@ -295,20 +297,20 @@ namespace librealsense
         // Note that the input parameter is passed by value
         static usb_spec get_usb_connection_type(std::string path)
         {
-            usb_spec res{usb_undefined};
+            usb_spec res{ usb_undefined };
 
-            char usb_actual_path[PATH_MAX] = {0};
+            char usb_actual_path[PATH_MAX] = { 0 };
             if (realpath(path.c_str(), usb_actual_path) != NULL)
             {
                 path = std::string(usb_actual_path);
                 std::string val;
-                if(!(std::ifstream(path + "/version") >> val))
+                if (!(std::ifstream(path + "/version") >> val))
                     throw linux_backend_exception("Failed to read usb version specification");
 
-                auto kvp = std::find_if(usb_spec_names.begin(),usb_spec_names.end(),
-                     [&val](const std::pair<usb_spec, std::string>& kpv){ return (std::string::npos !=val.find(kpv.second));});
-                        if (kvp != std::end(usb_spec_names))
-                            res = kvp->first;
+                auto kvp = std::find_if(usb_spec_names.begin(), usb_spec_names.end(),
+                    [&val](const std::pair<usb_spec, std::string>& kpv) { return (std::string::npos != val.find(kpv.second)); });
+                if (kvp != std::end(usb_spec_names))
+                    res = kvp->first;
             }
             return res;
         }
@@ -316,13 +318,13 @@ namespace librealsense
         v4l_usb_device::v4l_usb_device(const usb_device_info& info)
         {
             int status = libusb_init(&_usb_context);
-            if(status < 0)
+            if (status < 0)
                 throw linux_backend_exception(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
 
 
             std::vector<usb_device_info> results;
             v4l_usb_device::foreach_usb_device(_usb_context,
-            [&results, info, this](const usb_device_info& i, libusb_device* dev)
+                [&results, info, this](const usb_device_info& i, libusb_device* dev)
             {
                 if (i.unique_id == info.unique_id)
                 {
@@ -338,33 +340,33 @@ namespace librealsense
         {
             try
             {
-                if(_usb_device)
+                if (_usb_device)
                     libusb_unref_device(_usb_device);
                 libusb_exit(_usb_context);
             }
-            catch(...)
+            catch (...)
             {
 
             }
         }
 
         void v4l_usb_device::foreach_usb_device(libusb_context* usb_context, std::function<void(
-                                                            const usb_device_info&,
-                                                            libusb_device*)> action)
+            const usb_device_info&,
+            libusb_device*)> action)
         {
             // Obtain libusb_device_handle for each device
             libusb_device ** list = nullptr;
             int status = libusb_get_device_list(usb_context, &list);
 
-            if(status < 0)
+            if (status < 0)
                 throw linux_backend_exception(to_string() << "libusb_get_device_list(...) returned " << libusb_error_name(status));
 
-            for(int i=0; list[i]; ++i)
+            for (int i = 0; list[i]; ++i)
             {
                 libusb_device * usb_device = list[i];
                 libusb_config_descriptor *config;
                 status = libusb_get_active_config_descriptor(usb_device, &config);
-                if(status == 0)
+                if (status == 0)
                 {
                     auto parent_device = libusb_get_parent(usb_device);
                     if (parent_device)
@@ -390,15 +392,15 @@ namespace librealsense
         {
             libusb_device_handle* usb_handle = nullptr;
             int status = libusb_open(_usb_device, &usb_handle);
-            if(status < 0)
+            if (status < 0)
                 throw linux_backend_exception(to_string() << "libusb_open(...) returned " << libusb_error_name(status));
             status = libusb_claim_interface(usb_handle, _mi);
-            if(status < 0)
+            if (status < 0)
                 throw linux_backend_exception(to_string() << "libusb_claim_interface(...) returned " << libusb_error_name(status));
 
             int actual_length;
             status = libusb_bulk_transfer(usb_handle, 1, const_cast<uint8_t*>(data.data()), data.size(), &actual_length, timeout_ms);
-            if(status < 0)
+            if (status < 0)
                 throw linux_backend_exception(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
 
             std::vector<uint8_t> result;
@@ -408,7 +410,7 @@ namespace librealsense
             {
                 result.resize(1024);
                 status = libusb_bulk_transfer(usb_handle, 0x81, const_cast<uint8_t*>(result.data()), result.size(), &actual_length, timeout_ms);
-                if(status < 0)
+                if (status < 0)
                     throw linux_backend_exception(to_string() << "libusb_bulk_transfer(...) returned " << libusb_error_name(status));
 
                 result.resize(actual_length);
@@ -420,12 +422,12 @@ namespace librealsense
         }
 
         void v4l_uvc_device::foreach_uvc_device(
-                std::function<void(const uvc_device_info&,
-                                   const std::string&)> action)
+            std::function<void(const uvc_device_info&,
+                const std::string&)> action)
         {
             // Enumerate all subdevices present on the system
             DIR * dir = opendir("/sys/class/video4linux");
-            if(!dir)
+            if (!dir)
             {
                 LOG_ERROR("Cannot access /sys/class/video4linux");
                 return;
@@ -433,12 +435,12 @@ namespace librealsense
             while (dirent * entry = readdir(dir))
             {
                 std::string name = entry->d_name;
-                if(name == "." || name == "..") continue;
+                if (name == "." || name == "..") continue;
 
                 // Resolve a pathname to ignore virtual video devices
                 std::string path = "/sys/class/video4linux/" + name;
                 std::string real_path{};
-                char buff[PATH_MAX] = {0};
+                char buff[PATH_MAX] = { 0 };
                 if (realpath(path.c_str(), buff) != NULL)
                 {
                     real_path = std::string(buff);
@@ -449,30 +451,30 @@ namespace librealsense
                 try
                 {
                     int vid, pid, mi;
-                    usb_spec usb_specification{usb_undefined};
+                    usb_spec usb_specification{ usb_undefined };
                     std::string busnum, devnum, devpath;
 
                     auto dev_name = "/dev/" + name;
 
                     struct stat st = {};
-                    if(stat(dev_name.c_str(), &st) < 0)
+                    if (stat(dev_name.c_str(), &st) < 0)
                     {
                         throw linux_backend_exception(to_string() << "Cannot identify '" << dev_name);
                     }
-                    if(!S_ISCHR(st.st_mode))
+                    if (!S_ISCHR(st.st_mode))
                         throw linux_backend_exception(dev_name + " is no device");
 
                     // Search directory and up to three parent directories to find busnum/devnum
                     std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/device/";
                     auto path = ss.str();
                     auto valid_path = false;
-                    for(auto i=0; i < MAX_DEV_PARENT_DIR; ++i)
+                    for (auto i = 0; i < MAX_DEV_PARENT_DIR; ++i)
                     {
-                        if(std::ifstream(path + "busnum") >> busnum)
+                        if (std::ifstream(path + "busnum") >> busnum)
                         {
-                            if(std::ifstream(path + "devnum") >> devnum)
+                            if (std::ifstream(path + "devnum") >> devnum)
                             {
-                                if(std::ifstream(path + "devpath") >> devpath)
+                                if (std::ifstream(path + "devpath") >> devpath)
                                 {
                                     valid_path = true;
                                     break;
@@ -481,26 +483,26 @@ namespace librealsense
                         }
                         path += "../";
                     }
-                    if(!valid_path)
+                    if (!valid_path)
                     {
 #ifndef RS2_USE_CUDA
-                       /* On the Jetson TX, the camera module is CSI & I2C and does not report as this code expects
-                       Patch suggested by JetsonHacks: https://github.com/jetsonhacks/buildLibrealsense2TX */
+                        /* On the Jetson TX, the camera module is CSI & I2C and does not report as this code expects
+                        Patch suggested by JetsonHacks: https://github.com/jetsonhacks/buildLibrealsense2TX */
                         LOG_WARNING("Failed to read busnum/devnum. Device Path: " << path);
 #endif
                         continue;
                     }
 
                     std::string modalias;
-                    if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
+                    if (!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
                         throw linux_backend_exception("Failed to read modalias");
-                    if(modalias.size() < 14 || modalias.substr(0,5) != "usb:v" || modalias[9] != 'p')
+                    if (modalias.size() < 14 || modalias.substr(0, 5) != "usb:v" || modalias[9] != 'p')
                         throw linux_backend_exception("Not a usb format modalias");
-                    if(!(std::istringstream(modalias.substr(5,4)) >> std::hex >> vid))
+                    if (!(std::istringstream(modalias.substr(5, 4)) >> std::hex >> vid))
                         throw linux_backend_exception("Failed to read vendor ID");
-                    if(!(std::istringstream(modalias.substr(10,4)) >> std::hex >> pid))
+                    if (!(std::istringstream(modalias.substr(10, 4)) >> std::hex >> pid))
                         throw linux_backend_exception("Failed to read product ID");
-                    if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/bInterfaceNumber") >> std::hex >> mi))
+                    if (!(std::ifstream("/sys/class/video4linux/" + name + "/device/bInterfaceNumber") >> std::hex >> mi))
                         throw linux_backend_exception("Failed to read interface number");
 
                     // Find the USB specification (USB2/3) type from the underlying device
@@ -522,7 +524,7 @@ namespace librealsense
                     info.conn_spec = usb_specification;
                     action(info, dev_name);
                 }
-                catch(const std::exception & e)
+                catch (const std::exception & e)
                 {
                     LOG_INFO("Not a USB video device: " << e.what());
                 }
@@ -532,12 +534,12 @@ namespace librealsense
 
         v4l_uvc_device::v4l_uvc_device(const uvc_device_info& info, bool use_memory_map)
             : _name(""), _info(),
-              _is_capturing(false),
-              _is_alive(true),
-              _thread(nullptr),
-              _use_memory_map(use_memory_map),
-              _is_started(false),
-              _stop_pipe_fd{}
+            _is_capturing(false),
+            _is_alive(true),
+            _thread(nullptr),
+            _use_memory_map(use_memory_map),
+            _is_started(false),
+            _stop_pipe_fd{}
         {
             foreach_uvc_device([&info, this](const uvc_device_info& i, const std::string& name)
             {
@@ -563,7 +565,7 @@ namespace librealsense
 
         void v4l_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int buffers)
         {
-            if(!_is_capturing && !_callback)
+            if (!_is_capturing && !_callback)
             {
                 v4l2_fmtdesc pixel_format = {};
                 pixel_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -585,8 +587,8 @@ namespace librealsense
                         };
 
                         if (std::find(pending_formats.begin(),
-                                      pending_formats.end(),
-                                      (const char*)pixel_format.description) ==
+                            pending_formats.end(),
+                            (const char*)pixel_format.description) ==
                             pending_formats.end())
                         {
                             const std::string s(to_string() << "!" << pixel_format.description);
@@ -596,16 +598,16 @@ namespace librealsense
                             if (std::regex_search(s.begin(), s.end(), match, rgx))
                             {
                                 std::stringstream ss;
-                                ss <<  match[1];
+                                ss << match[1];
                                 int id;
                                 ss >> std::hex >> id;
                                 fourcc = (const big_endian<int> &)id;
 
                                 if (fourcc == profile.format)
                                 {
-                                    throw linux_backend_exception(to_string() << "The requested pixel format '"  << fourcc_to_string(id)
-                                                                  << "' is not natively supported by the Linux kernel and likely requires a patch"
-                                                                  <<  "!\nAlternatively please upgrade to kernel 4.12 or later.");
+                                    throw linux_backend_exception(to_string() << "The requested pixel format '" << fourcc_to_string(id)
+                                        << "' is not natively supported by the Linux kernel and likely requires a patch"
+                                        << "!\nAlternatively please upgrade to kernel 4.12 or later.");
                                 }
                             }
                         }
@@ -616,11 +618,11 @@ namespace librealsense
 
                 v4l2_format fmt = {};
                 fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                fmt.fmt.pix.width       = profile.width;
-                fmt.fmt.pix.height      = profile.height;
+                fmt.fmt.pix.width = profile.width;
+                fmt.fmt.pix.height = profile.height;
                 fmt.fmt.pix.pixelformat = (const big_endian<int> &)profile.format;
-                fmt.fmt.pix.field       = V4L2_FIELD_NONE;
-                if(xioctl(_fd, VIDIOC_S_FMT, &fmt) < 0)
+                fmt.fmt.pix.field = V4L2_FIELD_NONE;
+                if (xioctl(_fd, VIDIOC_S_FMT, &fmt) < 0)
                 {
                     throw linux_backend_exception("xioctl(VIDIOC_S_FMT) failed");
                 }
@@ -629,12 +631,12 @@ namespace librealsense
 
                 v4l2_streamparm parm = {};
                 parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                if(xioctl(_fd, VIDIOC_G_PARM, &parm) < 0)
+                if (xioctl(_fd, VIDIOC_G_PARM, &parm) < 0)
                     throw linux_backend_exception("xioctl(VIDIOC_G_PARM) failed");
 
                 parm.parm.capture.timeperframe.numerator = 1;
                 parm.parm.capture.timeperframe.denominator = profile.fps;
-                if(xioctl(_fd, VIDIOC_S_PARM, &parm) < 0)
+                if (xioctl(_fd, VIDIOC_S_PARM, &parm) < 0)
                     throw linux_backend_exception("xioctl(VIDIOC_S_PARM) failed");
 
                 // Init memory mapped IO
@@ -642,20 +644,20 @@ namespace librealsense
                 req.count = buffers;
                 req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                 req.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
-                if(xioctl(_fd, VIDIOC_REQBUFS, &req) < 0)
+                if (xioctl(_fd, VIDIOC_REQBUFS, &req) < 0)
                 {
-                    if(errno == EINVAL)
+                    if (errno == EINVAL)
                         throw linux_backend_exception(_name + " does not support memory mapping");
                     else
                         throw linux_backend_exception("xioctl(VIDIOC_REQBUFS) failed");
                 }
 
-                for(size_t i = 0; i < buffers; ++i)
+                for (size_t i = 0; i < buffers; ++i)
                 {
                     _buffers.push_back(std::make_shared<buffer>(_fd, _use_memory_map, i));
                 }
 
-                _profile =  profile;
+                _profile = profile;
                 _callback = callback;
             }
             else
@@ -666,7 +668,7 @@ namespace librealsense
 
         void v4l_uvc_device::stream_on(std::function<void(const notification& n)> error_handler)
         {
-            if(!_is_capturing)
+            if (!_is_capturing)
             {
                 _error_handler = error_handler;
 
@@ -674,11 +676,11 @@ namespace librealsense
                 for (auto&& buf : _buffers) buf->prepare_for_streaming(_fd);
 
                 v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                if(xioctl(_fd, VIDIOC_STREAMON, &type) < 0)
+                if (xioctl(_fd, VIDIOC_STREAMON, &type) < 0)
                     throw linux_backend_exception("xioctl(VIDIOC_STREAMON) failed");
 
                 _is_capturing = true;
-                _thread = std::unique_ptr<std::thread>(new std::thread([this](){ capture_loop(); }));
+                _thread = std::unique_ptr<std::thread>(new std::thread([this]() { capture_loop(); }));
             }
         }
 
@@ -694,7 +696,7 @@ namespace librealsense
 
         void v4l_uvc_device::close(stream_profile)
         {
-            if(_is_capturing)
+            if (_is_capturing)
             {
                 _is_capturing = false;
                 _is_started = false;
@@ -706,13 +708,13 @@ namespace librealsense
 
                 // Stop streamining
                 v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                if(xioctl(_fd, VIDIOC_STREAMOFF, &type) < 0)
+                if (xioctl(_fd, VIDIOC_STREAMOFF, &type) < 0)
                     throw linux_backend_exception("xioctl(VIDIOC_STREAMOFF) failed");
             }
 
             if (_callback)
             {
-                for(size_t i = 0; i < _buffers.size(); i++)
+                for (size_t i = 0; i < _buffers.size(); i++)
                 {
                     _buffers[i]->detach_buffer();
                 }
@@ -723,9 +725,9 @@ namespace librealsense
                 req.count = 0;
                 req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                 req.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
-                if(xioctl(_fd, VIDIOC_REQBUFS, &req) < 0)
+                if (xioctl(_fd, VIDIOC_REQBUFS, &req) < 0)
                 {
-                    if(errno == EINVAL)
+                    if (errno == EINVAL)
                         LOG_ERROR(_name + " does not support memory mapping");
                     else
                         throw linux_backend_exception("xioctl(VIDIOC_REQBUFS) failed");
@@ -738,7 +740,7 @@ namespace librealsense
         std::string v4l_uvc_device::fourcc_to_string(uint32_t id) const
         {
             uint32_t device_fourcc = id;
-            char fourcc_buff[sizeof(device_fourcc)+1];
+            char fourcc_buff[sizeof(device_fourcc) + 1];
             librealsense::copy(fourcc_buff, &device_fourcc, sizeof(device_fourcc));
             fourcc_buff[sizeof(device_fourcc)] = 0;
             return fourcc_buff;
@@ -750,7 +752,7 @@ namespace librealsense
             buff[0] = 0;
             if (write(_stop_pipe_fd[1], buff, 1) < 0)
             {
-                 throw linux_backend_exception("Could not signal video capture thread to stop. Error write to pipe.");
+                throw linux_backend_exception("Could not signal video capture thread to stop. Error write to pipe.");
             }
         }
 
@@ -786,7 +788,7 @@ namespace librealsense
                 }
             } while (val < 0 && errno == EINTR);
 
-            if(val < 0)
+            if (val < 0)
             {
                 _is_capturing = false;
                 _is_started = false;
@@ -797,29 +799,29 @@ namespace librealsense
 
                 // Stop streamining
                 v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                if(xioctl(_fd, VIDIOC_STREAMOFF, &type) < 0)
+                if (xioctl(_fd, VIDIOC_STREAMOFF, &type) < 0)
                     throw linux_backend_exception("xioctl(VIDIOC_STREAMOFF) failed");
             }
-            else if(val > 0)
+            else if (val > 0)
             {
-                if(FD_ISSET(_stop_pipe_fd[0], &fds) || FD_ISSET(_stop_pipe_fd[1], &fds))
+                if (FD_ISSET(_stop_pipe_fd[0], &fds) || FD_ISSET(_stop_pipe_fd[1], &fds))
                 {
-                    if(!_is_capturing)
+                    if (!_is_capturing)
                     {
                         LOG_INFO("Stream finished");
                         return;
                     }
                 }
-                else if(FD_ISSET(_fd, &fds))
+                else if (FD_ISSET(_fd, &fds))
                 {
                     FD_ZERO(&fds);
                     FD_SET(_fd, &fds);
                     v4l2_buffer buf = {};
                     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                     buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
-                    if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
+                    if (xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
                     {
-                        if(errno == EAGAIN)
+                        if (errno == EAGAIN)
                             return;
 
                         throw linux_backend_exception("xioctl(VIDIOC_DQBUF) failed");
@@ -830,14 +832,14 @@ namespace librealsense
 
                     if (_is_started)
                     {
-                        if((buf.bytesused < buffer->get_full_length() - MAX_META_DATA_SIZE) &&
-                                buf.bytesused > 0)
+                        if ((buf.bytesused < buffer->get_full_length() - MAX_META_DATA_SIZE) &&
+                            buf.bytesused > 0)
                         {
                             auto percentage = (100 * buf.bytesused) / buffer->get_full_length();
                             std::stringstream s;
                             s << "Incomplete frame detected!\nSize " << buf.bytesused
-                              << " out of " << buffer->get_full_length() << " bytes (" << percentage << "%)";
-                            librealsense::notification n = { RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS2_LOG_SEVERITY_WARN, s.str()};
+                                << " out of " << buffer->get_full_length() << " bytes (" << percentage << "%)";
+                            librealsense::notification n = { RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS2_LOG_SEVERITY_WARN, s.str() };
 
                             _error_handler(n);
                         }
@@ -851,19 +853,19 @@ namespace librealsense
                                 md_size = (*(uint8_t*)md_start);
                             }
 
-                            auto timestamp = (double)buf.timestamp.tv_sec*1000.f + (double)buf.timestamp.tv_usec/1000.f;
+                            auto timestamp = (double)buf.timestamp.tv_sec*1000.f + (double)buf.timestamp.tv_usec / 1000.f;
                             timestamp = monotonic_to_realtime(timestamp);
 
                             frame_object fo{ buffer->get_length_frame_only(), md_size,
                                 buffer->get_frame_start(), md_start, timestamp };
 
-                             buffer->attach_buffer(buf);
-                             moved_qbuff = true;
-                             auto fd = _fd;
-                             _callback(_profile, fo,
-                                       [fd, buffer]() mutable {
-                                 buffer->request_next_frame(fd);
-                             });
+                            buffer->attach_buffer(buf);
+                            moved_qbuff = true;
+                            auto fd = _fd;
+                            _callback(_profile, fo,
+                                [fd, buffer]() mutable {
+                                buffer->request_next_frame(fd);
+                            });
                         }
                         else
                         {
@@ -885,7 +887,7 @@ namespace librealsense
             else
             {
                 LOG_WARNING("Frames didn't arrived within 5 seconds");
-                librealsense::notification n = {RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT, 0, RS2_LOG_SEVERITY_WARN,  "Frames didn't arrived within 5 seconds"};
+                librealsense::notification n = { RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT, 0, RS2_LOG_SEVERITY_WARN,  "Frames didn't arrived within 5 seconds" };
 
                 _error_handler(n);
             }
@@ -896,7 +898,7 @@ namespace librealsense
             if (state == D0 && _state == D3)
             {
                 _fd = open(_name.c_str(), O_RDWR | O_NONBLOCK, 0);
-                if(_fd < 0)
+                if (_fd < 0)
                     throw linux_backend_exception(to_string() << "Cannot open '" << _name);
 
 
@@ -904,28 +906,28 @@ namespace librealsense
                     throw linux_backend_exception("v4l_uvc_device: Cannot create pipe!");
 
                 v4l2_capability cap = {};
-                if(xioctl(_fd, VIDIOC_QUERYCAP, &cap) < 0)
+                if (xioctl(_fd, VIDIOC_QUERYCAP, &cap) < 0)
                 {
-                    if(errno == EINVAL)
+                    if (errno == EINVAL)
                         throw linux_backend_exception(_name + " is no V4L2 device");
                     else
                         throw linux_backend_exception("xioctl(VIDIOC_QUERYCAP) failed");
                 }
-                if(!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE))
+                if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE))
                     throw linux_backend_exception(_name + " is no video capture device");
 
-                if(!(cap.capabilities & V4L2_CAP_STREAMING))
+                if (!(cap.capabilities & V4L2_CAP_STREAMING))
                     throw linux_backend_exception(_name + " does not support streaming I/O");
 
                 // Select video input, video standard and tune here.
                 v4l2_cropcap cropcap = {};
                 cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                if(xioctl(_fd, VIDIOC_CROPCAP, &cropcap) == 0)
+                if (xioctl(_fd, VIDIOC_CROPCAP, &cropcap) == 0)
                 {
                     v4l2_crop crop = {};
                     crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
                     crop.c = cropcap.defrect; // reset to default
-                    if(xioctl(_fd, VIDIOC_S_CROP, &crop) < 0)
+                    if (xioctl(_fd, VIDIOC_S_CROP, &crop) < 0)
                     {
                         switch (errno)
                         {
@@ -933,18 +935,19 @@ namespace librealsense
                         default: break; // Errors ignored
                         }
                     }
-                } else {} // Errors ignored
+                }
+                else {} // Errors ignored
             }
             if (state == D3 && _state == D0)
             {
                 close(_profile);
-                if(::close(_fd) < 0)
+                if (::close(_fd) < 0)
                     throw linux_backend_exception("v4l_uvc_device: close(_fd) failed");
 
-                if(::close(_stop_pipe_fd[0]) < 0)
-                   throw linux_backend_exception("v4l_uvc_device: close(_stop_pipe_fd[0]) failed");
-                if(::close(_stop_pipe_fd[1]) < 0)
-                   throw linux_backend_exception("v4l_uvc_device: close(_stop_pipe_fd[1]) failed");
+                if (::close(_stop_pipe_fd[0]) < 0)
+                    throw linux_backend_exception("v4l_uvc_device: close(_stop_pipe_fd[0]) failed");
+                if (::close(_stop_pipe_fd[1]) < 0)
+                    throw linux_backend_exception("v4l_uvc_device: close(_stop_pipe_fd[1]) failed");
 
                 _fd = 0;
                 _stop_pipe_fd[0] = _stop_pipe_fd[1] = 0;
@@ -954,9 +957,9 @@ namespace librealsense
 
         bool v4l_uvc_device::set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size)
         {
-            uvc_xu_control_query q = {static_cast<uint8_t>(xu.unit), control, UVC_SET_CUR,
-                                      static_cast<uint16_t>(size), const_cast<uint8_t *>(data)};
-            if(xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0)
+            uvc_xu_control_query q = { static_cast<uint8_t>(xu.unit), control, UVC_SET_CUR,
+                static_cast<uint16_t>(size), const_cast<uint8_t *>(data) };
+            if (xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0)
             {
                 if (errno == EIO || errno == EAGAIN) // TODO: Log?
                     return false;
@@ -968,9 +971,9 @@ namespace librealsense
         }
         bool v4l_uvc_device::get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const
         {
-            uvc_xu_control_query q = {static_cast<uint8_t>(xu.unit), control, UVC_GET_CUR,
-                                      static_cast<uint16_t>(size), const_cast<uint8_t *>(data)};
-            if(xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0)
+            uvc_xu_control_query q = { static_cast<uint8_t>(xu.unit), control, UVC_GET_CUR,
+                static_cast<uint16_t>(size), const_cast<uint8_t *>(data) };
+            if (xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0)
             {
                 if (errno == EIO || errno == EAGAIN) // TODO: Log?
                     return false;
@@ -985,8 +988,8 @@ namespace librealsense
             control_range result{};
             __u16 size = 0;
             //__u32 value = 0;      // all of the real sense extended controls are up to 4 bytes
-                                    // checking return value for UVC_GET_LEN and allocating
-                                    // appropriately might be better
+            // checking return value for UVC_GET_LEN and allocating
+            // appropriately might be better
             //__u8 * data = (__u8 *)&value;
             // MS XU controls are partially supported only
             struct uvc_xu_control_query xquery = {};
@@ -999,14 +1002,14 @@ namespace librealsense
             xquery.unit = xu.unit;
             xquery.data = (__u8 *)&size;
 
-            if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
+            if (-1 == ioctl(_fd, UVCIOC_CTRL_QUERY, &xquery)) {
                 throw linux_backend_exception("xioctl(UVC_GET_LEN) failed");
             }
 
-            assert(size<=len);
+            assert(size <= len);
 
             std::vector<uint8_t> buf;
-            auto buf_size = std::max((size_t)len,sizeof(__u32));
+            auto buf_size = std::max((size_t)len, sizeof(__u32));
             buf.resize(buf_size);
 
             xquery.query = UVC_GET_MIN;
@@ -1014,7 +1017,7 @@ namespace librealsense
             xquery.selector = control;
             xquery.unit = xu.unit;
             xquery.data = buf.data();
-            if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
+            if (-1 == ioctl(_fd, UVCIOC_CTRL_QUERY, &xquery)) {
                 throw linux_backend_exception("xioctl(UVC_GET_MIN) failed");
             }
             result.min.resize(buf_size);
@@ -1025,7 +1028,7 @@ namespace librealsense
             xquery.selector = control;
             xquery.unit = xu.unit;
             xquery.data = buf.data();
-            if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
+            if (-1 == ioctl(_fd, UVCIOC_CTRL_QUERY, &xquery)) {
                 throw linux_backend_exception("xioctl(UVC_GET_MAX) failed");
             }
             result.max.resize(buf_size);
@@ -1036,7 +1039,7 @@ namespace librealsense
             xquery.selector = control;
             xquery.unit = xu.unit;
             xquery.data = buf.data();
-            if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
+            if (-1 == ioctl(_fd, UVCIOC_CTRL_QUERY, &xquery)) {
                 throw linux_backend_exception("xioctl(UVC_GET_DEF) failed");
             }
             result.def.resize(buf_size);
@@ -1047,18 +1050,18 @@ namespace librealsense
             xquery.selector = control;
             xquery.unit = xu.unit;
             xquery.data = buf.data();
-            if(-1 == ioctl(_fd,UVCIOC_CTRL_QUERY,&xquery)){
+            if (-1 == ioctl(_fd, UVCIOC_CTRL_QUERY, &xquery)) {
                 throw linux_backend_exception("xioctl(UVC_GET_CUR) failed");
             }
             result.step.resize(buf_size);
             std::copy(buf.begin(), buf.end(), result.step.begin());
 
-           return result;
+            return result;
         }
 
         bool v4l_uvc_device::get_pu(rs2_option opt, int32_t& value) const
         {
-            struct v4l2_control control = {get_cid(opt), 0};
+            struct v4l2_control control = { get_cid(opt), 0 };
             if (xioctl(_fd, VIDIOC_G_CTRL, &control) < 0)
             {
                 if (errno == EIO || errno == EAGAIN) // TODO: Log?
@@ -1067,7 +1070,7 @@ namespace librealsense
                 throw linux_backend_exception("xioctl(VIDIOC_G_CTRL) failed");
             }
 
-            if (RS2_OPTION_ENABLE_AUTO_EXPOSURE==opt)  { control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1; }
+            if (RS2_OPTION_ENABLE_AUTO_EXPOSURE == opt) { control.value = (V4L2_EXPOSURE_MANUAL == control.value) ? 0 : 1; }
             value = control.value;
 
             return true;
@@ -1075,8 +1078,8 @@ namespace librealsense
 
         bool v4l_uvc_device::set_pu(rs2_option opt, int32_t value)
         {
-            struct v4l2_control control = {get_cid(opt), value};
-            if (RS2_OPTION_ENABLE_AUTO_EXPOSURE==opt) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
+            struct v4l2_control control = { get_cid(opt), value };
+            if (RS2_OPTION_ENABLE_AUTO_EXPOSURE == opt) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
             if (xioctl(_fd, VIDIOC_S_CTRL, &control) < 0)
             {
                 if (errno == EIO || errno == EAGAIN) // TODO: Log?
@@ -1091,7 +1094,7 @@ namespace librealsense
         control_range v4l_uvc_device::get_pu_range(rs2_option option) const
         {
             // Auto controls range is trimed to {0,1} range
-            if(option >= RS2_OPTION_ENABLE_AUTO_EXPOSURE && option <= RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
+            if (option >= RS2_OPTION_ENABLE_AUTO_EXPOSURE && option <= RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE)
             {
                 static const int32_t min = 0, max = 1, step = 1, def = 1;
                 control_range range(min, max, step, def);
@@ -1140,8 +1143,8 @@ namespace librealsense
                     };
 
                     if (std::find(known_problematic_formats.begin(),
-                                  known_problematic_formats.end(),
-                                  (const char*)pixel_format.description) ==
+                        known_problematic_formats.end(),
+                        (const char*)pixel_format.description) ==
                         known_problematic_formats.end())
                     {
                         const std::string s(to_string() << "!" << pixel_format.description);
@@ -1151,7 +1154,7 @@ namespace librealsense
                         if (std::regex_search(s.begin(), s.end(), match, rgx))
                         {
                             std::stringstream ss;
-                            ss <<  match[1];
+                            ss << match[1];
                             int id;
                             ss >> std::hex >> id;
                             fourcc = (const big_endian<int> &)id;
@@ -1194,7 +1197,7 @@ namespace librealsense
                         ++frame_interval.index;
                     }
 
-                     ++frame_size.index;
+                    ++frame_size.index;
                 }
 
                 ++pixel_format.index;
@@ -1213,7 +1216,7 @@ namespace librealsense
 
         uint32_t v4l_uvc_device::get_cid(rs2_option option)
         {
-            switch(option)
+            switch (option)
             {
             case RS2_OPTION_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
             case RS2_OPTION_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
@@ -1227,7 +1230,7 @@ namespace librealsense
             case RS2_OPTION_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
             case RS2_OPTION_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; // Automatic gain/exposure control
             case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
-            case RS2_OPTION_POWER_LINE_FREQUENCY : return V4L2_CID_POWER_LINE_FREQUENCY;
+            case RS2_OPTION_POWER_LINE_FREQUENCY: return V4L2_CID_POWER_LINE_FREQUENCY;
             case RS2_OPTION_AUTO_EXPOSURE_PRIORITY: return V4L2_CID_EXPOSURE_AUTO_PRIORITY;
             default: throw linux_backend_exception(to_string() << "no v4l2 cid for option " << option);
             }
@@ -1237,7 +1240,7 @@ namespace librealsense
         {
             try
             {
-                while(_is_capturing)
+                while (_is_capturing)
                 {
                     poll();
                 }
@@ -1246,7 +1249,7 @@ namespace librealsense
             {
                 LOG_ERROR(ex.what());
 
-                librealsense::notification n = {RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, 0, RS2_LOG_SEVERITY_ERROR, ex.what()};
+                librealsense::notification n = { RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, 0, RS2_LOG_SEVERITY_ERROR, ex.what() };
 
                 _error_handler(n);
             }
@@ -1260,13 +1263,13 @@ namespace librealsense
         std::shared_ptr<uvc_device> v4l_backend::create_uvc_device(uvc_device_info info) const
         {
             return std::make_shared<platform::retry_controls_work_around>(
-                    std::make_shared<v4l_uvc_device>(info));
+                std::make_shared<v4l_uvc_device>(info));
         }
         std::vector<uvc_device_info> v4l_backend::query_uvc_devices() const
         {
             std::vector<uvc_device_info> results;
             v4l_uvc_device::foreach_uvc_device(
-            [&results](const uvc_device_info& i, const std::string&)
+                [&results](const uvc_device_info& i, const std::string&)
             {
                 results.push_back(i);
             });
@@ -1281,12 +1284,12 @@ namespace librealsense
         {
             libusb_context * usb_context = nullptr;
             int status = libusb_init(&usb_context);
-            if(status < 0)
+            if (status < 0)
                 throw linux_backend_exception(to_string() << "libusb_init(...) returned " << libusb_error_name(status));
 
             std::vector<usb_device_info> results;
             v4l_usb_device::foreach_usb_device(usb_context,
-            [&results](const usb_device_info& i, libusb_device* dev)
+                [&results](const usb_device_info& i, libusb_device* dev)
             {
                 results.push_back(i);
             });
@@ -1303,7 +1306,7 @@ namespace librealsense
         std::vector<hid_device_info> v4l_backend::query_hid_devices() const
         {
             std::vector<hid_device_info> results;
-            v4l_hid_device::foreach_hid_device([&](const hid_device_info& hid_dev_info){
+            v4l_hid_device::foreach_hid_device([&](const hid_device_info& hid_dev_info) {
                 results.push_back(hid_dev_info);
             });
 
