@@ -8,6 +8,7 @@
 #include "h/rs_sensor.h"
 #include "h/rs_frame.h"
 #include "rs.h"
+#include "h/rs_types.h"
 #include "assert.h"
 #include <stdlib.h>
 #include <stdbool.h>
@@ -105,13 +106,13 @@ static bool is_pixel_in_line(const float curr[2], const float start[2], const fl
 }
 
 /* Find projected pixel with unknown depth search along line. */
-static void rs2_project_pixel_to_depth_pixel(float to_pixel[2],
+static void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
     const rs2_frame* depth_frame, 
     float depth_min, float depth_max, 
     const struct rs2_intrinsics* depth_intrin,
-    const struct rs2_intrinsics* other_intrin,
-    const struct rs2_extrinsics* other_to_depth,
-    const struct rs2_extrinsics* depth_to_other, 
+    const struct rs2_intrinsics* color_intrin,
+    const struct rs2_extrinsics* color_to_depth,
+    const struct rs2_extrinsics* depth_to_color,
     const float from_pixel[2])
 {
     const float MINIMUM_DISTANCE_THRESHOLD = 1;
@@ -119,28 +120,30 @@ static void rs2_project_pixel_to_depth_pixel(float to_pixel[2],
     float start_pixel[2] = { 0 }, end_pixel[2] = { 0 }, point[3] = { 0 }, other_point[3] = { 0 }, projected_pixel[2] = { 0 };
 
     //Find line start pixel
-    rs2_deproject_pixel_to_point(point, other_intrin, from_pixel, depth_min);
-    rs2_transform_point_to_point(other_point, other_to_depth, point);
+    rs2_deproject_pixel_to_point(point, color_intrin, from_pixel, depth_min);
+    rs2_transform_point_to_point(other_point, color_to_depth, point);
     rs2_project_point_to_pixel(start_pixel, depth_intrin, other_point);
     if (start_pixel[0] < 0) start_pixel[0] = 0;
     if (start_pixel[1] < 0) start_pixel[1] = 0;
 
     //Find line end depth pixel
-    rs2_deproject_pixel_to_point(point, other_intrin, from_pixel, depth_max);
-    rs2_transform_point_to_point(other_point, other_to_depth, point);
+    rs2_deproject_pixel_to_point(point, color_intrin, from_pixel, depth_max);
+    rs2_transform_point_to_point(other_point, color_to_depth, point);
     rs2_project_point_to_pixel(end_pixel, depth_intrin, other_point);
 
     //search along line for the depth pixel that it's projected pixel is the closest to the input pixel
     float min_dist = -1;
     for (float p[2] = { start_pixel[0], start_pixel[1] }; is_pixel_in_line(p, start_pixel, end_pixel); next_pixel_in_line(p, start_pixel, end_pixel))
     {
+        (get_frame_data())[y*get_width() + x]
+
         float depth = rs2_depth_frame_get_distance(depth_frame, p[0], p[1], 0);
         if (depth == 0) 
             continue;
 
         rs2_deproject_pixel_to_point(point, depth_intrin, p, depth);
-        rs2_transform_point_to_point(other_point, depth_to_other, point);
-        rs2_project_point_to_pixel(projected_pixel, other_intrin, other_point);
+        rs2_transform_point_to_point(other_point, depth_to_color, point);
+        rs2_project_point_to_pixel(projected_pixel, color_intrin, other_point);
 
         float new_dist = pow((projected_pixel[1] - from_pixel[1]), 2) + pow((projected_pixel[0] - from_pixel[0]), 2);
         if (new_dist < min_dist || min_dist < 0)
