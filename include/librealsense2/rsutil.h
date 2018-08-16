@@ -135,8 +135,7 @@ static void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
     float min_dist = -1;
     for (float p[2] = { start_pixel[0], start_pixel[1] }; is_pixel_in_line(p, start_pixel, end_pixel); next_pixel_in_line(p, start_pixel, end_pixel))
     {
-        auto pixel = data[(int)p[1] * depth_intrin->width + (int)p[0]];
-        float depth = depth_scale * pixel;
+        float depth = depth_scale * data[(int)p[1] * depth_intrin->width + (int)p[0]];
         if (depth == 0) 
             continue;
 
