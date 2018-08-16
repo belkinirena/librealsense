@@ -8,10 +8,10 @@
 #include "h/rs_sensor.h"
 #include "h/rs_frame.h"
 #include "rs.h"
-#include "h/rs_types.h"
 #include "assert.h"
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <math.h>
 
 
@@ -107,7 +107,7 @@ static bool is_pixel_in_line(const float curr[2], const float start[2], const fl
 
 /* Find projected pixel with unknown depth search along line. */
 static void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
-    const rs2_frame* depth_frame, 
+    const uint16_t* data, float depth_scale,
     float depth_min, float depth_max, 
     const struct rs2_intrinsics* depth_intrin,
     const struct rs2_intrinsics* color_intrin,
@@ -135,7 +135,8 @@ static void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
     float min_dist = -1;
     for (float p[2] = { start_pixel[0], start_pixel[1] }; is_pixel_in_line(p, start_pixel, end_pixel); next_pixel_in_line(p, start_pixel, end_pixel))
     {
-        float depth = rs2_depth_frame_get_distance(depth_frame, p[0], p[1], 0);
+        auto pixel = data[(int)p[1] * depth_intrin->width + (int)p[0]];
+        float depth = depth_scale * pixel;
         if (depth == 0) 
             continue;
 

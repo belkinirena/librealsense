@@ -4748,7 +4748,7 @@ TEST_CASE("Syncer try wait for frames", "[live][software-device]") {
 
 
 TEST_CASE("Projection from recording", "[live][using_pipeline][projection]") {
-    const int MAXIMUM_DISTANCE_THRESHOLD = 3;
+    const float MAXIMUM_DISTANCE_THRESHOLD = 3;
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
     {
@@ -4772,6 +4772,17 @@ TEST_CASE("Projection from recording", "[live][using_pipeline][projection]") {
             auto depth_extrin_to_color = depth_profile.get_extrinsics_to(color_profile);
             auto color_extrin_to_depth = color_profile.get_extrinsics_to(depth_profile);
 
+            auto sensors = profile.get_device().query_sensors();
+            float depth_scale = 0;
+            for (auto s : sensors)
+            {
+                auto depth_sensor = s.is<rs2::depth_sensor>();
+                if (s.is<rs2::depth_sensor>())
+                {
+                    REQUIRE_NOTHROW(depth_scale = s.as<rs2::depth_sensor>().get_depth_scale());
+                }
+            }
+
             for (float i = 0; i < depth_intrin.width; i++)
             {
                 for (float j = 0; j < depth_intrin.height; j++)
@@ -4785,7 +4796,7 @@ TEST_CASE("Projection from recording", "[live][using_pipeline][projection]") {
                     rs2_transform_point_to_point(other_point, &depth_extrin_to_color, point);
                     rs2_project_point_to_pixel(from_pixel, &color_intrin, other_point);
 
-                    rs2_color_pixel_to_depth_pixel(to_pixel, depth.get(), 0.1, 10,
+                    rs2_project_color_pixel_to_depth_pixel(to_pixel, reinterpret_cast<const uint16_t*>(depth.get_data()), depth_scale, 0.1, 10,
                         &depth_intrin, &color_intrin,
                         &color_extrin_to_depth,  &depth_extrin_to_color, from_pixel);
 
@@ -4795,5 +4806,5 @@ TEST_CASE("Projection from recording", "[live][using_pipeline][projection]") {
                 }
             }
         }
-    }
+    }  
 }
