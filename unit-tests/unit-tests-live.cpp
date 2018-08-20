@@ -4815,7 +4815,8 @@ TEST_CASE("Syncer try wait for frames", "[live][software-device]") {
 
 TEST_CASE("Projection from recording", "[software-device][using_pipeline][projection]") {
     rs2::context ctx;
-    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
+        return;
     std::string folder_name = get_folder_path(special_folder::temp_folder);
     const std::string filename = folder_name + "single_depth_color_640x480.bag";
     REQUIRE(file_exists(filename));
@@ -4894,6 +4895,8 @@ TEST_CASE("Projection from recording", "[software-device][using_pipeline][projec
             float dist = sqrt(pow((depth_pixel[1] - to_pixel[1]), 2) + pow((depth_pixel[0] - to_pixel[0]), 2));
             if (dist > 1)
                 count++;
+            if (dist > 2)
+                printf("%f\n", dist);
         }
     }
     const double MAX_ERROR_PERCENTAGE = 0.1;
