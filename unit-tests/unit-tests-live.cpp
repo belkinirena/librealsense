@@ -4815,7 +4815,7 @@ TEST_CASE("Syncer try wait for frames", "[live][software-device]") {
 
 TEST_CASE("Projection from recording", "[software-device][using_pipeline][projection]") {
     rs2::context ctx;
-    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"));
+    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx));
     std::string folder_name = get_folder_path(special_folder::temp_folder);
     const std::string filename = folder_name + "single_depth_color_640x480.bag";
     REQUIRE(file_exists(filename));
@@ -4823,10 +4823,11 @@ TEST_CASE("Projection from recording", "[software-device][using_pipeline][projec
 
     syncer sync;
     std::vector<sensor> sensors = dev.query_sensors();
+    REQUIRE(sensors.size() == 2);
     for (auto s : sensors)
     {
-        s.open(s.get_stream_profiles().front());
-        s.start(sync);
+        REQUIRE_NOTHROW(s.open(s.get_stream_profiles().front()));
+        REQUIRE_NOTHROW(s.start(sync));
     }
 
     rs2::frame depth;
@@ -4836,6 +4837,7 @@ TEST_CASE("Projection from recording", "[software-device][using_pipeline][projec
     while (!depth_profile || !color_profile)
     {
         frameset frames = sync.wait_for_frames(200);
+        REQUIRE(frames.size() > 0);
         if (frames.size() == 1)
         {
             if (frames.get_profile().stream_type() == RS2_STREAM_DEPTH)
