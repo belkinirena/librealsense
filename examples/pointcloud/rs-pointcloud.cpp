@@ -9,6 +9,43 @@
 // Helper functions
 void register_glfw_callbacks(window& app, glfw_state& app_state);
 
+rs2_stream find_stream_to_align(const std::vector<rs2::stream_profile>& streams)
+{
+    //Given a vector of streams, we try to find a depth stream and another stream to align depth with.
+    //We prioritize color streams to make the view look better.
+    //If color is not available, we take another stream that (other than depth)
+    rs2_stream align_to = RS2_STREAM_ANY;
+    bool depth_stream_found = false;
+    bool color_stream_found = false;
+    for (rs2::stream_profile sp : streams)
+    {
+        rs2_stream profile_stream = sp.stream_type();
+        if (profile_stream != RS2_STREAM_DEPTH)
+        {
+            if (!color_stream_found)         //Prefer color
+                align_to = profile_stream;
+
+            if (profile_stream == RS2_STREAM_COLOR)
+            {
+                color_stream_found = true;
+            }
+        }
+        else
+        {
+            depth_stream_found = true;
+        }
+    }
+
+    if (!depth_stream_found)
+        throw std::runtime_error("No Depth stream available");
+
+    if (align_to == RS2_STREAM_ANY)
+        throw std::runtime_error("No stream found to align with Depth");
+
+    return align_to;
+}
+
+
 int main(int argc, char * argv[]) try
 {
     // Create a simple OpenGL window for rendering:
@@ -26,32 +63,67 @@ int main(int argc, char * argv[]) try
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
     // Start streaming with default recommended configuration
-    pipe.start();
+    rs2::pipeline_profile profile = pipe.start();
+
+    rs2_stream align_to = find_stream_to_align(profile.get_streams());
+
+    // Create a rs2::align object.
+    // rs2::align allows us to perform alignment of depth frames to others frames
+    //The "align_to" is the stream type to which we plan to align depth frames.
+    rs2::align align(align_to);
 
     while (app) // Application still alive?
     {
         // Wait for the next set of frames from the camera
         auto frames = pipe.wait_for_frames();
 
-        auto depth = frames.get_depth_frame();
+        {
+            auto depth = frames.get_depth_frame();
 
-        // Generate the pointcloud and texture mappings
-        points = pc.calculate(depth);
+            // Generate the pointcloud and texture mappings
+            points = pc.calculate(depth);
 
-        auto color = frames.get_color_frame();
+            auto color = frames.get_color_frame();
 
-        // For cameras that don't have RGB sensor, we'll map the pointcloud to infrared instead of color
-        if (!color)
-            color = frames.get_infrared_frame();
+            auto depth_extrin_to_color = depth.get_profile().as<rs2::video_stream_profile>().get_extrinsics_to(color.get_profile());
 
-        // Tell pointcloud object to map to this color frame
-        pc.map_to(color);
+            // For cameras that don't have RGB sensor, we'll map the pointcloud to infrared instead of color
+            if (!color)
+                color = frames.get_infrared_frame();
 
-        // Upload the color frame to OpenGL
-        app_state.tex.upload(color);
+            // Tell pointcloud object to map to this color frame
+            pc.map_to(color);
 
-        // Draw the pointcloud
-        draw_pointcloud(app.width(), app.height(), app_state, points);
+            // Upload the color frame to OpenGL
+            app_state.tex.upload(color);
+
+            // Draw the pointcloud
+            draw_colored_pointcloud(app.width(), app.height(), app_state, points, 1, 0, 0, true, &depth_extrin_to_color);
+        }
+
+        {
+            auto processed = align.process(frames);
+
+            auto depth = processed.get_depth_frame();
+
+            // Generate the pointcloud and texture mappings
+            points = pc.calculate(depth);
+
+            auto color = processed.get_color_frame();
+
+            // For cameras that don't have RGB sensor, we'll map the pointcloud to infrared instead of color
+            if (!color)
+                color = processed.get_infrared_frame();
+
+            // Tell pointcloud object to map to this color frame
+            pc.map_to(color);
+
+            // Upload the color frame to OpenGL
+            app_state.tex.upload(color);
+
+            // Draw the pointcloud
+            draw_colored_pointcloud(app.width(), app.height(), app_state, points, 0, 1, 0);
+        }
     }
 
     return EXIT_SUCCESS;

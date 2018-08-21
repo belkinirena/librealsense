@@ -9,7 +9,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-
+#include <librealsense2/rsutil.h>
 //////////////////////////////
 // Basic Data Types         //
 //////////////////////////////
@@ -227,9 +227,7 @@ struct glfw_state {
     texture tex;
 };
 
-
-// Handles all the OpenGL calls needed to display the point cloud
-void draw_pointcloud(float width, float height, glfw_state& app_state, rs2::points& points)
+void draw_colored_pointcloud(float width, float height, glfw_state& app_state, rs2::points& points, float red, float green, float blue, bool transform = false, rs2_extrinsics* extrin = nullptr)
 {
     if (!points)
         return;
@@ -272,9 +270,28 @@ void draw_pointcloud(float width, float height, glfw_state& app_state, rs2::poin
     {
         if (vertices[i].z)
         {
+            if (transform)
+            {
+                float from[3] = { vertices[i].x, vertices[i].y, vertices[i].z };
+                float to[3] = { 0 };
+                rs2_transform_point_to_point(to, extrin, from);
+                rs2::vertex new_vertex;
+                new_vertex.x = to[0];
+                new_vertex.y = to[1];
+                new_vertex.z = to[2];
+                glVertex3fv(new_vertex);
+                glTexCoord2fv(tex_coords[i]);
+                if (!red || !green || !blue)
+                    glColor3f(red, green, blue);
+
+                continue;
+
+            }
             // upload the point and texture coordinates only for points we have depth data for
             glVertex3fv(vertices[i]);
             glTexCoord2fv(tex_coords[i]);
+            if(!red || !green || !blue)
+                glColor3f(red, green, blue);
         }
     }
 
@@ -285,6 +302,11 @@ void draw_pointcloud(float width, float height, glfw_state& app_state, rs2::poin
     glPopMatrix();
     glPopAttrib();
     glPushMatrix();
+}
+// Handles all the OpenGL calls needed to display the point cloud
+void draw_pointcloud(float width, float height, glfw_state& app_state, rs2::points& points)
+{
+    draw_colored_pointcloud(width, height, app_state, points, 0, 0, 0);
 }
 
 // Registers the state variable and callbacks to allow mouse control of the pointcloud
