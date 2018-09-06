@@ -136,6 +136,11 @@ namespace librealsense
         _name = create_composite_name(matchers, name);
     }
 
+    composite_matcher::~composite_matcher()
+    {
+        std::lock_guard<std::mutex> lock(sensor_register_before_streaming);
+    }
+
     void composite_matcher::dispatch(frame_holder f, syncronization_environment env)
     {
         std::stringstream s;
@@ -206,11 +211,15 @@ namespace librealsense
 
                     sensor->register_before_streaming_changes_callback([this, stream_id](bool streaming)
                     {
-                        if (!streaming)
+                        if (this)
                         {
-                            _frames_queue[_matchers[stream_id].get()].clear();
-                            _frames_queue.erase(_matchers[stream_id].get());
-                            _matchers[stream_id]->set_active(false);
+                            std::lock_guard<std::mutex> lock(sensor_register_before_streaming);
+                            if (!streaming)
+                            {
+                                _frames_queue[_matchers[stream_id].get()].clear();
+                                _frames_queue.erase(_matchers[stream_id].get());
+                                _matchers[stream_id]->set_active(false);
+                            }
                         }
                     });
                 }

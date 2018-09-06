@@ -113,7 +113,7 @@ namespace librealsense
     {
     public:
         composite_matcher(std::vector<std::shared_ptr<matcher>> matchers, std::string name);
-
+        virtual ~composite_matcher();
 
         virtual bool are_equivalent(frame_holder& a, frame_holder& b) = 0;
         virtual bool is_smaller_than(frame_holder& a, frame_holder& b) = 0;
@@ -136,6 +136,9 @@ namespace librealsense
         std::map<stream_id, std::shared_ptr<matcher>> _matchers;
         std::map<matcher*, double> _next_expected;
         std::map<matcher*, rs2_timestamp_domain> _next_expected_domain;
+
+    private:
+        std::mutex sensor_register_before_streaming;
     };
 
     class frame_number_composite_matcher : public composite_matcher
