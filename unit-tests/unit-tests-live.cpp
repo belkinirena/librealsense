@@ -4001,7 +4001,7 @@ TEST_CASE("All suggested profiles can be opened", "[live][!mayfail]") {
     }
 }
 
-TEST_CASE("Pipeline config enable resolve start flow", "[live][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline config enable resolve start flow", "[live][pipeline][using_pipeline][!mayfail]") {
     rs2::context ctx;
 
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
