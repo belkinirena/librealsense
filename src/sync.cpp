@@ -203,6 +203,16 @@ namespace librealsense
                     {
                         LOG_ERROR("Stream matcher not found! stream=" << rs2_stream_to_string(stream_type));
                     }
+
+                    sensor->register_before_streaming_changes_callback([this, stream_id](bool streaming)
+                    {
+                        if (!streaming)
+                        {
+                            _frames_queue[_matchers[stream_id].get()].clear();
+                            _frames_queue.erase(_matchers[stream_id].get());
+                            _matchers[stream_id]->set_active(false);
+                        }
+                    });
                 }
 
                 else if(!matcher->get_active())
@@ -387,6 +397,25 @@ namespace librealsense
             }
         } while (synced_frames.size() > 0);
     }
+
+    void composite_matcher::set_active(const bool active)
+    {
+        LOG_WARNING("set active " << _name << " " << active);
+        _active = active;
+        if (!active)
+        {
+            for (auto m : _matchers)
+            {
+                m.second->set_active(active);
+            }
+        }
+    }
+
+    bool composite_matcher::get_active() const
+    {
+        return _active;
+    }
+
 
     frame_number_composite_matcher::frame_number_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers)
         :composite_matcher(matchers, "FN: ")

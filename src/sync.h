@@ -88,8 +88,8 @@ namespace librealsense
         virtual ~matcher();
 
         virtual std::string get_name() const;
-        bool get_active() const;
-        void set_active(const bool active);
+        virtual bool get_active() const;
+        virtual void set_active(const bool active);
 
     protected:
        std::vector<stream_id> _streams_id;
@@ -120,6 +120,9 @@ namespace librealsense
         virtual bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing)  = 0;
         virtual void clean_inactive_streams(frame_holder& f) = 0;
         virtual void update_last_arrived(frame_holder& f, matcher* m) = 0;
+
+        virtual bool get_active() const override;
+        virtual void set_active(const bool active) override;
 
         void dispatch(frame_holder f, syncronization_environment env) override;
         std::string frames_to_string(std::vector<librealsense::matcher*> matchers);
