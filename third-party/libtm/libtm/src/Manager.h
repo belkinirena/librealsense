@@ -17,6 +17,9 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #include "Event.h"
 #include "CompleteTask.h"
 #include <list>
+#include <string>
+#include <sstream>
+#include <iostream>
 
 namespace perc
 {
