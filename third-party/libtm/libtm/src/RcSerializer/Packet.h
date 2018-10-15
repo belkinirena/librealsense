@@ -82,7 +82,6 @@ namespace perc
     private:
         std::map<uint16_t, std::shared_ptr<packet_image_raw_t>> mImagePackets;
         ExposurePacket mExposurePacket;
-        packet_stereo_raw_t mPacket;
     };
 
     class GyroPacket : public Packet

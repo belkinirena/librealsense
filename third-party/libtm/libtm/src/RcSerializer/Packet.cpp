@@ -66,18 +66,19 @@ const uint8_t* StereoPacket::getBytes()
     {
         return nullptr;
     }
-    mPacket.header.sensor_id = mImagePackets[0]->header.sensor_id / 2;
-    mPacket.header.type = packet_stereo_raw;
-    mPacket.header.time = mImagePackets[0]->header.time;
-    mPacket.height = mImagePackets[0]->height;
-    mPacket.width = mImagePackets[0]->width;
-    mPacket.format = mImagePackets[0]->format;
-    mPacket.exposure_time_us = mImagePackets[0]->exposure_time_us;
-    mPacket.stride1 = mImagePackets[0]->stride;
-    mPacket.stride2 = mImagePackets[1]->stride;
-    mPacket.header.bytes = sizeof(packet_stereo_raw_t) + mPacket.height * (mPacket.stride1 + mPacket.stride2);
+    packet_stereo_raw_t packet = {0};
+    packet.header.sensor_id = mImagePackets[0]->header.sensor_id / 2;
+    packet.header.type = packet_stereo_raw;
+    packet.header.time = mImagePackets[0]->header.time;
+    packet.height = mImagePackets[0]->height;
+    packet.width = mImagePackets[0]->width;
+    packet.format = mImagePackets[0]->format;
+    packet.exposure_time_us = mImagePackets[0]->exposure_time_us;
+    packet.stride1 = mImagePackets[0]->stride;
+    packet.stride2 = mImagePackets[1]->stride;
+    packet.header.bytes = sizeof(packet_stereo_raw_t) + packet.height * (packet.stride1 + packet.stride2);
     
-    return (uint8_t*)&mPacket;
+    return (uint8_t*)&packet;
 }
 size_t StereoPacket::getSize()
 {
