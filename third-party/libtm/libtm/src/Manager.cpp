@@ -4,6 +4,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 *******************************************************************************/
 
 #define LOG_TAG "TrackingManager"
+#include "TrackingCommon.h"
 #include "Utils.h"
 #include <stdio.h>
 #include <stdlib.h>
