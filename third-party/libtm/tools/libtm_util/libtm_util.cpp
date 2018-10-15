@@ -1928,14 +1928,14 @@ void imageThreadFunction()
 void hostLogThreadFunction()
 {
     TrackingData::Log log;
-    FILE *logThreadStream = stdout;
     uint32_t waitForLogMsec = MAX_WAIT_FOR_LOG_MSEC;
 
     std::string fileHeaderName(gFileHeaderName);
     std::string fileName = "Host_Log_" + fileHeaderName + "_Libtm_" + std::to_string(LIBTM_VERSION_MAJOR) + "_" + std::to_string(LIBTM_VERSION_MINOR) + "_" + std::to_string(LIBTM_VERSION_PATCH) + "_FW_" + FW_VERSION + ".log";
 
-    auto rc = fopen_s(&logThreadStream, fileName.c_str(), "w");
-    if (rc != 0)
+
+    FILE* logThreadStream = fopen(fileName.c_str(),"w");
+    if (logThreadStream == NULL)
     {
         LOGE("Error while opening file %s", fileName.c_str());
         return;
@@ -2019,8 +2019,8 @@ void fwLogThreadFunction()
 
     if (gConfiguration.logConfiguration[LogSourceFW].logOutputMode == LogOutputModeBuffer)
     {
-        auto rc = fopen_s(&logThreadStream, fileName.c_str(), "w");
-        if (rc != 0)
+        logThreadStream = fopen(fileName.c_str(),"w");
+        if (logThreadStream == NULL)
         {
             LOGE("Error while opening file %s", fileName.c_str());
             return;

@@ -25,12 +25,6 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #define IN
 #define OUT
 
-#ifdef __unix
-#include <stdlib.h>
-#include <string.h>
-#define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),  (mode)))==NULL
-#endif
-
 namespace perc {
 
 #ifdef _WIN32

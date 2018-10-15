@@ -224,9 +224,8 @@ Status Manager::loadFileToDevice(libusb_device * device, const char * fileName)
         return Status::INIT_FAILED;
     }
 
-    FILE* file;
-    auto res = fopen_s(&file, fileName, "rb");
-    if (res != 0)
+    FILE* file = fopen(fileName,"rb");
+    if (file == NULL)
     {
         LOGE("Error while loading file %s to device 0x%p - can't open file", fileName, device);
         return Status::INIT_FAILED;
