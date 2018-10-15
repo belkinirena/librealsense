@@ -120,8 +120,10 @@ elseif(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 endif()
 
-
 option(BUILD_WITH_TM2 "Build with support for Intel TM2 tracking device" ON)
+if(APPLE)
+    set(BUILD_WITH_TM2 OFF)
+endif()
 
 option(BUILD_EASYLOGGINGPP "Build EasyLogging++ as a part of the build" ON)
 
