@@ -107,7 +107,7 @@ int Dispatcher::registerHandler(EventHandler *handler, Handle fd, unsigned long 
 {
     if (mExitPending) return -1;
     ASSERT(handler);
-    ASSERT(mThreadId == std::this_thread::get_id());
+    //ASSERT(mThreadId == std::this_thread::get_id());
     int res = -1;
     HandlerHolder holder(handler, fd, mask, act);
     if (mPoller.add(holder.Event)) {
@@ -148,7 +148,7 @@ int Dispatcher::registerHandler(EventHandler *handler)
 // ----------------------------------------------------------------------------
 void Dispatcher::removeHandle(Handle fd)
 {
-    ASSERT(mThreadId == std::this_thread::get_id());
+    //ASSERT(mThreadId == std::this_thread::get_id());
     mPoller.remove(fd);
     std::lock_guard<std::mutex> guard(m_HandlersGuard);
     if (m_Handlers.count(fd) > 0) {
@@ -160,7 +160,7 @@ void Dispatcher::removeHandle(Handle fd)
 void Dispatcher::cancelTimer (uintptr_t timerId)
 {
     ASSERT(timerId);
-    ASSERT(mThreadId == std::this_thread::get_id());
+    //ASSERT(mThreadId == std::this_thread::get_id());
     std::lock_guard<std::mutex> guard(m_TimersGuard);
     HolderTimer *holder = (HolderTimer *)timerId;
     // check if trying to cancel timer from <onTimeout> callback
@@ -174,7 +174,7 @@ void Dispatcher::cancelTimer (uintptr_t timerId)
 int Dispatcher::removeHandler(EventHandler *handler, unsigned int mask)
 {
     ASSERT(handler);
-    ASSERT(mThreadId == std::this_thread::get_id());
+    //ASSERT(mThreadId == std::this_thread::get_id());
     int removedHandlers = 0;
 
     if (mask & MESSAGES_MASK) {
