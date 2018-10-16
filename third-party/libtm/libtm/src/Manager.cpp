@@ -331,7 +331,10 @@ DEFINE_FSM_STATE_ENTRY(Manager, IDLE_STATE)
 
 DEFINE_FSM_GUARD(Manager, IDLE_STATE, ON_INIT, msg)
 {
-    return 0 == libusb_init(&mContext);
+    LOGD("libusb_init!!!!!!!!!!!1");
+    int ret =  libusb_init(&mContext);
+    LOGD("libusb_init ret : %d" , ret);
+    return 0 == ret;
 }
 
 DEFINE_FSM_ACTION(Manager, IDLE_STATE, ON_INIT, msg)
