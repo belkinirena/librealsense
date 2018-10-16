@@ -78,7 +78,6 @@ const char* perc::UsbPlugListener::usbSpeed(uint16_t bcdUSB)
 
 void perc::UsbPlugListener::EnumerateDevices()
 {
-    return;
     libusb_device **list = NULL;
     int rc = 0;
     ssize_t count = 0;
