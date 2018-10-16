@@ -63,25 +63,25 @@ Dispatcher::~Dispatcher()
 int Dispatcher::handleEvents(nsecs_t timeout)
 {
     if (mExitPending) {
-        LOGV("handleEvents(): processExit");
+        LOGD("handleEvents(): processExit");
         processExit();
         return -1;
     }
     int ret = 0;
     mThreadId = std::this_thread::get_id();
-    LOGV("handleEvents(): Poller::poll()");
+    LOGD("handleEvents(): Poller::poll()");
     Poller::event event;
     int n = mPoller.poll(event, calculatePollTimeout(timeout));
-    LOGV("handleEvents(): Poller::poll() ret %d", n);
+    LOGD("handleEvents(): Poller::poll() ret %d", n);
     if (n > 0) {
         // process message queues: complete number of messages from message list that was signaled by event
         if (event.handle == mEvent.handle()) {
-            LOGV("handleEvents(): processMessages");
+            LOGD("handleEvents(): processMessages");
             ret += processMessages();
         }
         else {
             // process file descriptor
-            LOGV("handleEvents(): processEvent fd %d, revents %x", event.handle, event.mask);
+            LOGD("handleEvents(): processEvent fd %d, revents %x", event.handle, event.mask);
             ret += processEvents(event);
         }
     }

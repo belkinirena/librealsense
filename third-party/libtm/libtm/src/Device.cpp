@@ -53,7 +53,7 @@ namespace perc {
         uint16_t actual = 0;
         Status status = Status::SUCCESS;
 
-        DEVICELOGV("Creating Device");
+        DEVICELOGD("Creating Device");
 
         ASSERT(mDispatcher);
         mFsm.init(FSM(main), this, mDispatcher, LOG_TAG);
@@ -271,7 +271,7 @@ namespace perc {
 
         if (res.header.wStatus == 0)
         {
-            DEVICELOGV("TM2 and Host clocks were synced in %d nanosec after %d tries", ns2ms(finish - start), syncTry);
+            DEVICELOGD("TM2 and Host clocks were synced in %d nanosec after %d tries", ns2ms(finish - start), syncTry);
         }
         else
         {
@@ -388,7 +388,7 @@ namespace perc {
         auto logSize = (response.header.dwLength - sizeof(bulk_message_response_header));
         log.entries = (uint32_t)(logSize / sizeof(device_event_log));
         log.maxEntries = MAX_FW_LOG_BUFFER_ENTRIES;
-        DEVICELOGV("log size = %d, entries = %d, entry size = %d", logSize, log.entries, sizeof(device_event_log));
+        DEVICELOGD("log size = %d, entries = %d, entry size = %d", logSize, log.entries, sizeof(device_event_log));
 
         if (logSize > (MAX_LOG_BUFFER_ENTRIES * MAX_LOG_BUFFER_ENTRY_SIZE))
         {
@@ -990,7 +990,7 @@ namespace perc {
         for (int j = 0; j < FRAMES_PER_STREAM; j++)
         {
             mFramesBuffersLists.push_back(std::shared_ptr<uint8_t>(new uint8_t[mFrameTempBufferSize], arrayDeleter<uint8_t>()));
-            DEVICELOGV("frame buffers pushed back - %p", mFramesBuffersLists.back().get());
+            DEVICELOGD("frame buffers pushed back - %p", mFramesBuffersLists.back().get());
         }
     }
 
@@ -1931,7 +1931,7 @@ namespace perc {
     {
         std::lock_guard<std::recursive_mutex> lg(mFramesBuffersMutex);
         mFramesBuffersLists.push_back(frame);
-        DEVICELOGV("frame buffers increased (%d) - %p", mFramesBuffersLists.size(), mFramesBuffersLists.back().get());
+        DEVICELOGD("frame buffers increased (%d) - %p", mFramesBuffersLists.size(), mFramesBuffersLists.back().get());
 
     }
 
@@ -1974,7 +1974,7 @@ namespace perc {
         }
 
     found:
-        DEVICELOGV("Found interrupt endpoint address: %d", result);
+        DEVICELOGD("Found interrupt endpoint address: %d", result);
         libusb_free_config_descriptor(config);
         return result;
     }
@@ -1986,7 +1986,7 @@ namespace perc {
         uint16_t actualChunk = 0;
         actual = 0;
 
-        DEVICELOGV("Reading EEPROM: offset 0x%X, size %d (bytes)", offset, size);
+        DEVICELOGD("Reading EEPROM: offset 0x%X, size %d (bytes)", offset, size);
         while (transferred < size)
         {
             unsigned int currentChunkSize;
@@ -2032,7 +2032,7 @@ namespace perc {
             return Status::ERROR_USB_TRANSFER;
         }
 
-        DEVICELOGV("Reading EEPROM chunk: offset 0x%X, size %d (bytes), actual %d, status 0x%X", offset, size, response.wSize, response.header.wStatus);
+        DEVICELOGD("Reading EEPROM chunk: offset 0x%X, size %d (bytes), actual %d, status 0x%X", offset, size, response.wSize, response.header.wStatus);
         if (response.header.wStatus == 0)
         {
             actual = response.wSize;
@@ -2091,7 +2091,7 @@ namespace perc {
             return Status::ERROR_USB_TRANSFER;
         }
 
-        DEVICELOGV("Writing EEPROM chunk: offset 0x%X, size %d (bytes), actual %d, status 0x%X", offset, size, response.wSize, response.header.wStatus);
+        DEVICELOGD("Writing EEPROM chunk: offset 0x%X, size %d (bytes), actual %d, status 0x%X", offset, size, response.wSize, response.header.wStatus);
         if (response.header.wStatus == 0)
         {
             actual = response.wSize;
@@ -2104,7 +2104,7 @@ namespace perc {
                 uint16_t tmp;
                 std::vector<char> tmpBuf;
                 tmpBuf.resize(size);
-                DEVICELOGV("Verifing EEPROM chunk: offset 0x%X, size %d (bytes)", offset, size);
+                DEVICELOGD("Verifing EEPROM chunk: offset 0x%X, size %d (bytes)", offset, size);
                 EepromRead(offset, size, (uint8_t*)tmpBuf.data(), tmp);
                 int rc = memcmp((uint8_t*)tmpBuf.data(), buffer, size);
                 if (rc)
@@ -2645,7 +2645,7 @@ namespace perc {
                 if (diff != 0)
                 {
                     double speed = ((double)totalBytesReceived) / diff;
-                    DEVICELOGV("Current transfer speed on Frame Endpoint is: %.2f bytes per second, Total bytes received %lld, time passed %.2f", speed, totalBytesReceived, diff);
+                    DEVICELOGD("Current transfer speed on Frame Endpoint is: %.2f bytes per second, Total bytes received %lld, time passed %.2f", speed, totalBytesReceived, diff);
                 }
             }
 
@@ -2694,7 +2694,7 @@ namespace perc {
                                 videoPrevFrame[frame->sensorIndex].prevFrameTimeStamp = frame->timestamp;
                                 videoPrevFrame[frame->sensorIndex].prevFrameId = frame->frameId;
 
-                                DEVICELOGV("frame buffers decreased (%d) - %p", mFramesBuffersLists.size()-1, mFramesBuffersLists.front().get());
+                                DEVICELOGD("frame buffers decreased (%d) - %p", mFramesBuffersLists.size()-1, mFramesBuffersLists.front().get());
 
                                 mFramesBuffersLists.pop_front();
                                 mTaskHandler->addTask(completeTask);
@@ -2734,7 +2734,7 @@ namespace perc {
                     interrupt_message_get_localization_data_stream* getLocalizationDataStream = (interrupt_message_get_localization_data_stream*)header;
                     uint16_t status = getLocalizationDataStream->wStatus;
 
-                    DEVICELOGV("Got Localization Data frame: status = 0x%X, moredata = %s, chunkIndex = %d, length = %d",
+                    DEVICELOGD("Got Localization Data frame: status = 0x%X, moredata = %s, chunkIndex = %d, length = %d",
                         status, 
                         (((MESSAGE_STATUS)getLocalizationDataStream->wStatus == MESSAGE_STATUS::MORE_DATA_AVAILABLE)) ? "True" : "False", 
                         getLocalizationDataStream->wIndex, 
@@ -3087,7 +3087,7 @@ namespace perc {
                     interrupt_message_set_localization_data_stream* setLocalizationDataStream = (interrupt_message_set_localization_data_stream*)header;
                     std::shared_ptr<CompleteTask> ptr = std::make_shared<LocalizationDataEventFrameCompleteTask>(mListener, setLocalizationDataStream, this);
 
-                    DEVICELOGV("Got Set Localization Data frame complete: status = 0x%X", setLocalizationDataStream->wStatus);
+                    DEVICELOGD("Got Set Localization Data frame complete: status = 0x%X", setLocalizationDataStream->wStatus);
 
                     MessageON_ASYNC_STOP setMsg;
                     mDispatcher->postMessage(&mFsm, setMsg);
@@ -3398,7 +3398,7 @@ namespace perc {
         }
 
         mFWInterfaceVersion = response.message;
-        DEVICELOGV("Interface Version =  %d.%d", mFWInterfaceVersion.dwMajor, mFWInterfaceVersion.dwMinor);
+        DEVICELOGD("Interface Version =  %d.%d", mFWInterfaceVersion.dwMajor, mFWInterfaceVersion.dwMinor);
 
         return Status::SUCCESS;
     }
@@ -3606,7 +3606,7 @@ namespace perc {
 
     void Device::StartThreads(bool interruptThread, bool frameThread)
     {
-        DEVICELOGV("Starting interruptThread = %s, frameThread = %s", (interruptThread ? "True" : "False"), (frameThread ? "True" : "False"));
+        DEVICELOGD("Starting interruptThread = %s, frameThread = %s", (interruptThread ? "True" : "False"), (frameThread ? "True" : "False"));
 
         mStreamEndpointThreadStop = false;
         mInterruptEndpointThreadStop = false;
@@ -3630,12 +3630,12 @@ namespace perc {
             while (mStreamEndpointThreadActive == false);
         }
 
-        DEVICELOGV("All threads started");
+        DEVICELOGD("All threads started");
     }
 
     void Device::StopThreads(bool force, bool interruptThread, bool frameThread)
     {
-        DEVICELOGV("Stopping interruptThread = %s, frameThread = %s, force = %s", (interruptThread?"True":"False"), (frameThread ? "True" : "False"), (force ? "True" : "False"));
+        DEVICELOGD("Stopping interruptThread = %s, frameThread = %s, force = %s", (interruptThread?"True":"False"), (frameThread ? "True" : "False"), (force ? "True" : "False"));
 
         if (force == true)
         {
@@ -3664,7 +3664,7 @@ namespace perc {
             }
         }
 
-        DEVICELOGV("All threads stopped");
+        DEVICELOGD("All threads stopped");
     }
 
     DEFINE_FSM_STATE_ENTRY(Device, ASYNC_STATE)
@@ -3778,7 +3778,7 @@ namespace perc {
 
         int rc = libusb_bulk_transfer(mDevice, usbMsg.mEndpointOut, buffer, BUFFER_SIZE, &actual, usbMsg.mTimeoutInMs);
 
-        DEVICELOGV("Sent request - MessageID: 0x%X (%s), Len: %d, UsbLen: %d, Actual: %d, rc: %d (%s)", 
+        DEVICELOGD("Sent request - MessageID: 0x%X (%s), Len: %d, UsbLen: %d, Actual: %d, rc: %d (%s)",
             header->wMessageID, messageCodeToString(LIBUSB_TRANSFER_TYPE_BULK, header->wMessageID).c_str(), header->dwLength, BUFFER_SIZE, actual, rc, libusb_error_name(rc));
         if (rc != 0 || actual != BUFFER_SIZE ) // lets assume no message will be more than 2Gb size
         {
@@ -3792,7 +3792,7 @@ namespace perc {
 
         bulk_message_response_header* res = (bulk_message_response_header*)usbMsg.mDst;
 
-        DEVICELOGV("Got response - MessageID: 0x%X (%s), Len: %d, Status: 0x%X, UsbLen: %d, Actual: %d, rc: %d (%s)", 
+        DEVICELOGD("Got response - MessageID: 0x%X (%s), Len: %d, Status: 0x%X, UsbLen: %d, Actual: %d, rc: %d (%s)",
             res->wMessageID, messageCodeToString(LIBUSB_TRANSFER_TYPE_BULK, res->wMessageID).c_str(), res->dwLength, res->wStatus, usbMsg.dstSize, actual, rc, libusb_error_name(rc));
 
         if ((rc == 0) && (header->wMessageID != res->wMessageID))

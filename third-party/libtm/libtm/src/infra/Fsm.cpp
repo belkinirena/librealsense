@@ -280,7 +280,7 @@ bool Fsm::CallTransitionGuard(const FsmTransition *pTransition, const Message &p
     if (pTransition->Guard)
         ret = pTransition->Guard(this, pEvent);
 
-    LOGV("[%s]:%s[%s]:guard%s %d",
+    LOGD("[%s]:%s[%s]:guard%s %d",
          m_pFsm[m_CurrStateId]->Name,
          TransitionType (pTransition->Type),
          pTransition->Name,
@@ -292,7 +292,7 @@ bool Fsm::CallTransitionGuard(const FsmTransition *pTransition, const Message &p
 // ----------------------------------------------------------------------------
 void Fsm::CallTransitionAction(const FsmTransition *pTransition, const Message &pEvent)
 {
-    LOGV("[%s]:%s[%s]:action%s",
+    LOGD("[%s]:%s[%s]:action%s",
          m_pFsm[m_CurrStateId]->Name,
          TransitionType (pTransition->Type),
          pTransition->Name,
@@ -305,7 +305,7 @@ void Fsm::CallTransitionAction(const FsmTransition *pTransition, const Message &
 void Fsm::CallStateEntry()
 {
     const FsmState *state = m_pFsm[m_CurrStateId];
-    LOGV("[%s]:entry%s",
+    LOGD("[%s]:entry%s",
           state->Name,
           state->Entry ? "()": "(none)");
     if (state->Entry)
@@ -316,7 +316,7 @@ void Fsm::CallStateEntry()
 void Fsm::CallStateExit()
 {
     const FsmState *state = m_pFsm[m_CurrStateId];
-    LOGV("[%s]:exit%s",
+    LOGD("[%s]:exit%s",
           state->Name,
           state->Exit ? "()": "(none)");
     if (state->Exit)

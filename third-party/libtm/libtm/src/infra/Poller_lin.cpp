@@ -85,7 +85,7 @@ namespace perc
         int n = ::epoll_wait(mData->mEpoll, &e, 1, (int)timeoutMs);
         if (n > 0) {
             std::lock_guard<std::mutex> guard(mData->mEventsGuard);
-            LOGV("poll: e.data.fd %d", e.data.fd);
+            LOGD("poll: e.data.fd %d", e.data.fd);
             if (mData->mEvents.count(e.data.fd) > 0) {
                 evt = mData->mEvents[e.data.fd];
             }

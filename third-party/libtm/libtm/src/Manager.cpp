@@ -260,7 +260,7 @@ cleanup:
 
 Status Manager::loadBufferToDevice(libusb_device * device, unsigned char * buffer, size_t size)
 {
-    LOGV("loading image to device 0x%p", device);
+    LOGD("loading image to device 0x%p", device);
 
     if (!device || !buffer || size == 0)
     {

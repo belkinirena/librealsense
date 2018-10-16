@@ -100,7 +100,7 @@ void perc::UsbPlugListener::EnumerateDevices()
 
         rc = libusb_get_device_descriptor(device, &desc);
 
-        LOGV("%d: VID 0x%04X, PID 0x%04X, bcdUSB 0x%x, iSerialNumber %d", idx, desc.idVendor, desc.idProduct, desc.bcdUSB, desc.iSerialNumber);
+        LOGD("%d: VID 0x%04X, PID 0x%04X, bcdUSB 0x%x, iSerialNumber %d", idx, desc.idVendor, desc.idProduct, desc.bcdUSB, desc.iSerialNumber);
 
         if ((identifyDevice(&desc) == true) || (identifyUDFDevice(&desc) == true))
         {
@@ -143,7 +143,7 @@ void perc::UsbPlugListener::EnumerateDevices()
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(t2 - t1).count();
 
-    LOGV("Devices connected: %d. Time: %d micro-seconds", mDeviceToPortMap.size(), duration);
+    LOGD("Devices connected: %d. Time: %d micro-seconds", mDeviceToPortMap.size(), duration);
 
     // free the list
     libusb_free_device_list(list, 1);
