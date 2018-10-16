@@ -3,6 +3,8 @@ cmake_policy(SET CMP0015 NEW)
 
 project(tm)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
 include_directories(${LIBUSB_LOCAL_INCLUDE_PATH}
     ${LIBTM_INCLUDE_DIR}
     ${INFRA_INCLUDE_DIR}
