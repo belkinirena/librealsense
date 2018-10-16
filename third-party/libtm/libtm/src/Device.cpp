@@ -600,6 +600,7 @@ namespace perc {
 
     void Device::onExit()
     {
+        DEVICELOGD("onExit()");
         std::lock_guard<std::mutex> lock(mDeletionMutex);
         if (mCleared)
             return;

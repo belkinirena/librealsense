@@ -69,8 +69,8 @@ Manager::Manager(Listener* lis, void* param) : mDispatcher(new Dispatcher()), mL
     }
 
 
-    TrackingData::LogControl logControl(LogVerbosityLevel::None,
-        LogOutputMode::LogOutputModeBuffer,
+    TrackingData::LogControl logControl(LogVerbosityLevel::Verbose,
+        LogOutputMode::LogOutputModeScreen,
         true);
 
     setHostLogControl(logControl);
