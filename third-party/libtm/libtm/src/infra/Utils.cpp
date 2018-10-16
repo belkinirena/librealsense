@@ -14,6 +14,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #include <string.h>
 #include <unistd.h>
 #include <sys/resource.h>
+#include <math.h>
 #define gettid() syscall(SYS_gettid)
 #else
 #include <windows.h>
