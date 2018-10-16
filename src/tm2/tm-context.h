@@ -23,7 +23,7 @@ namespace librealsense
         // TrackingManager::Listener
         void onStateChanged(perc::TrackingManager::EventType state, perc::TrackingDevice* device, perc::TrackingData::DeviceInfo deviceInfo) override;
         void onError(perc::Status error, perc::TrackingDevice*) override;
-        void start_manager();
+        void create_manager();
     private:
         void thread_proc();
         friend class connect_disconnect_listener;

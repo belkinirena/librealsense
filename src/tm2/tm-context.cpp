@@ -21,7 +21,7 @@ namespace librealsense
     {
     }
 
-    void tm2_context::start_manager()
+    void tm2_context::create_manager()
     {
         {
             std::lock_guard<std::mutex> lock(_manager_mutex);
