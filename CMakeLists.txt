@@ -787,7 +787,7 @@ if(HWM_OVER_XU)
     add_definitions(-DHWM_OVER_XU)
 endif()
 
-if ((NOT USE_SYSTEM_LIBUSB AND NOT WIN32 OR FORCE_LIBUVC) OR (BUILD_WITH_TM2 AND WIN32))
+if ((NOT USE_SYSTEM_LIBUSB AND (NOT WIN32 OR FORCE_LIBUVC)) OR (BUILD_WITH_TM2 AND WIN32))
         include(ExternalProject)
 
         ExternalProject_Add(
