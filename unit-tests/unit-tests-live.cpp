@@ -532,7 +532,7 @@ TEST_CASE("Sync start stop", "[live][check]") {
         REQUIRE(image.get_height() == other_video.height());
     }
 }
-TEST_CASE("Device metadata enumerates correctly", "[live]")
+TEST_CASE("Device metadata enumerates correctly", "[live][check]")
 {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -560,7 +560,7 @@ TEST_CASE("Device metadata enumerates correctly", "[live]")
 ////////////////////////////////////////////
 ////// Test basic streaming functionality //
 ////////////////////////////////////////////
-TEST_CASE("Start-Stop stream sequence", "[live][using_pipeline]")
+TEST_CASE("Start-Stop stream sequence", "[live][using_pipeline][check]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
@@ -664,7 +664,7 @@ TEST_CASE("Start-Stop stream sequence", "[live][using_pipeline]")
 //////// Calibration information tests //
 /////////////////////////////////////////
 
-TEST_CASE("No extrinsic transformation between a stream and itself", "[live]")
+TEST_CASE("No extrinsic transformation between a stream and itself", "[live][check]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
@@ -699,7 +699,7 @@ TEST_CASE("No extrinsic transformation between a stream and itself", "[live]")
     }
 }
 
-TEST_CASE("Extrinsic transformation between two streams is a rigid transform", "[live]")
+TEST_CASE("Extrinsic transformation between two streams is a rigid transform", "[live][check]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
@@ -758,7 +758,7 @@ TEST_CASE("Extrinsic transformation between two streams is a rigid transform", "
     }
 }
 
-TEST_CASE("Extrinsic transformations are transitive", "[live]")
+TEST_CASE("Extrinsic transformations are transitive", "[live][check]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
@@ -872,7 +872,7 @@ std::shared_ptr<device> do_with_waiting_for_camera_connection(rs2::context ctx, 
     return result;
 }
 
-TEST_CASE("Toggle Advanced Mode", "[live][AdvMd]") {
+TEST_CASE("Toggle Advanced Mode", "[live][AdvMd][check]") {
     for (int i = 0; i < 3; ++i)
     {
         rs2::context ctx;
@@ -917,7 +917,7 @@ TEST_CASE("Toggle Advanced Mode", "[live][AdvMd]") {
 }
 
 
-TEST_CASE("Advanced Mode presets", "[live][AdvMd]")
+TEST_CASE("Advanced Mode presets", "[live][AdvMd][check]")
 {
     static const std::vector<res_type> resolutions = { low_resolution,
                                                        medium_resolution,
@@ -997,7 +997,7 @@ TEST_CASE("Advanced Mode presets", "[live][AdvMd]")
     }
 }
 
-TEST_CASE("Advanced Mode JSON", "[live][AdvMd]") {
+TEST_CASE("Advanced Mode JSON", "[live][AdvMd][check]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -1060,7 +1060,7 @@ TEST_CASE("Advanced Mode JSON", "[live][AdvMd]") {
     }
 }
 
-TEST_CASE("Advanced Mode controls", "[live][AdvMd]") {
+TEST_CASE("Advanced Mode controls", "[live][AdvMd][check]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -1248,7 +1248,7 @@ TEST_CASE("Advanced Mode controls", "[live][AdvMd]") {
 }
 
 // the tests may incorrectly interpret changes to librealsense-core, namely default profiles selections
-TEST_CASE("Streaming modes sanity check", "[live][!mayfail]")
+TEST_CASE("Streaming modes sanity check", "[live][!mayfail][check]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
@@ -1344,7 +1344,7 @@ TEST_CASE("Streaming modes sanity check", "[live][!mayfail]")
     }
 }
 
-TEST_CASE("Motion profiles sanity", "[live]")
+TEST_CASE("Motion profiles sanity", "[live][check]")
 {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -1400,7 +1400,7 @@ TEST_CASE("Motion profiles sanity", "[live]")
     }
 }
 
-TEST_CASE("Check width and height of stream intrinsics", "[live][AdvMd]")
+TEST_CASE("Check width and height of stream intrinsics", "[live][AdvMd][check]")
 {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -1479,7 +1479,7 @@ TEST_CASE("Check width and height of stream intrinsics", "[live][AdvMd]")
     }
 }
 
-TEST_CASE("Check option API", "[live][options]")
+TEST_CASE("Check option API", "[live][options][check]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
@@ -1655,7 +1655,7 @@ const std::map<dev_group, std::vector<option_bundle> > auto_disabling_controls =
 };
 
 // Verify that the bundled controls (Exposure<->Aut-Exposure) are in sync
-TEST_CASE("Auto-Disabling Controls", "[live][options]")
+TEST_CASE("Auto-Disabling Controls", "[live][options][check]")
 {
     // Require at least one device to be plugged in
     rs2::context ctx;
@@ -1732,7 +1732,7 @@ TEST_CASE("Auto-Disabling Controls", "[live][options]")
 
 /// The test may fail due to changes in profiles list that do not indicate regression.
 /// TODO - refactoring required to make the test agnostic to changes imposed by librealsense core
-TEST_CASE("Multiple devices", "[live][multicam][!mayfail]")
+TEST_CASE("Multiple devices", "[live][multicam][!mayfail][check]")
 {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -1898,7 +1898,7 @@ TEST_CASE("Multiple devices", "[live][multicam][!mayfail]")
 // On Windows 10 RS2 there is an unusual behaviour that may fail this test:
 // When trying to enable the second instance of Source Reader, instead of failing, the Media Foundation allows it
 // and sends an HR to the first Source Reader instead (something about the application being preempted)
-TEST_CASE("Multiple applications", "[live][multicam][!mayfail]")
+TEST_CASE("Multiple applications", "[live][multicam][!mayfail][check]")
 {
     rs2::context ctx1;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx1))
@@ -2155,7 +2155,7 @@ void trigger_error(const rs2::device& dev, int num)
 
 
 
-TEST_CASE("Error handling sanity", "[live][!mayfail]") {
+TEST_CASE("Error handling sanity", "[live][!mayfail][check]") {
 
     //Require at least one device to be plugged in
     rs2::context ctx;
@@ -2246,7 +2246,7 @@ bool is_fw_version_newer(rs2::sensor& subdevice, const uint32_t other_fw[4])
 }
 
 
-TEST_CASE("Auto disabling control behavior", "[live]") {
+TEST_CASE("Auto disabling control behavior", "[live][check]") {
     //Require at least one device to be plugged in
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -2341,7 +2341,7 @@ void reset_device(std::shared_ptr<rs2::device>& strong, std::weak_ptr<rs2::devic
     disable_sensitive_options_for(*strong);
 }
 
-TEST_CASE("Disconnect events works", "[live]") {
+TEST_CASE("Disconnect events works", "[live][check]") {
 
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -2414,7 +2414,7 @@ TEST_CASE("Disconnect events works", "[live]") {
     }
 }
 
-TEST_CASE("Connect events works", "[live]") {
+TEST_CASE("Connect events works", "[live][check]") {
 
 
     rs2::context ctx;
@@ -2547,7 +2547,7 @@ std::shared_ptr<std::function<void(rs2::frame fref)>> check_stream_sanity(const 
     return func;
 }
 
-TEST_CASE("Connect Disconnect events while streaming", "[live]") {
+TEST_CASE("Connect Disconnect events while streaming", "[live][check]") {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
     {
@@ -2640,7 +2640,7 @@ void check_controls_sanity(const context& ctx, const sensor& dev)
     }
 }
 //
-TEST_CASE("Connect Disconnect events while controls", "[live]")
+TEST_CASE("Connect Disconnect events while controls", "[live][check]")
 {
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx))
@@ -2711,7 +2711,7 @@ TEST_CASE("Connect Disconnect events while controls", "[live]")
 
 }
 
-TEST_CASE("Basic device_hub flow", "[live][!mayfail]") {
+TEST_CASE("Basic device_hub flow", "[live][!mayfail][check]") {
 
     rs2::context ctx;
 
@@ -2757,7 +2757,7 @@ struct stream_format
     int index;
 };
 
-TEST_CASE("Auto-complete feature works", "[offline][util::config][using_pipeline]") {
+TEST_CASE("Auto-complete feature works", "[offline][util::config][using_pipeline][check]") {
     // dummy device can provide the following profiles:
     rs2::context ctx;
 
@@ -3040,7 +3040,7 @@ static const std::map< dev_type, device_profiles> pipeline_default_configuration
 /* SR300*/              { { "0AA5", true } ,{ { { RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 640, 480, 0 },{ RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
 };
 
-TEST_CASE("Pipeline wait_for_frames", "[live][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline wait_for_frames", "[live][pipeline][using_pipeline][check]") {
 
     rs2::context ctx;
 
@@ -3106,7 +3106,7 @@ TEST_CASE("Pipeline wait_for_frames", "[live][pipeline][using_pipeline]") {
     }
 }
 
-TEST_CASE("Pipeline poll_for_frames", "[live][pipeline][using_pipeline]")
+TEST_CASE("Pipeline poll_for_frames", "[live][pipeline][using_pipeline][check]")
 {
     rs2::context ctx;
 
@@ -3199,7 +3199,7 @@ static const std::map<dev_type, device_profiles> pipeline_custom_configurations 
                                      { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 1920, 1080, 0 } }, 30, true } },
 };
 
-TEST_CASE("Pipeline enable stream", "[live][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline enable stream", "[live][pipeline][using_pipeline][check]") {
 
     auto dev_requests = pipeline_custom_configurations;
 
@@ -3296,7 +3296,7 @@ static const std::map<dev_type, device_profiles> pipeline_autocomplete_configura
                                      { RS2_STREAM_COLOR, RS2_FORMAT_RGB8, 0, 0, 0 } }, 30, true } },
 };
 
-TEST_CASE("Pipeline enable stream auto complete", "[live][pipeline][using_pipeline]")
+TEST_CASE("Pipeline enable stream auto complete", "[live][pipeline][using_pipeline][check]")
 {
     auto configurations = pipeline_autocomplete_configurations;
 
@@ -3371,7 +3371,7 @@ TEST_CASE("Pipeline enable stream auto complete", "[live][pipeline][using_pipeli
     }
 }
 
-TEST_CASE("Pipeline disable_all", "[live][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline disable_all", "[live][pipeline][using_pipeline][check]") {
 
     auto not_default_configurations = pipeline_custom_configurations;
     auto default_configurations = pipeline_default_configurations;
@@ -3449,7 +3449,7 @@ TEST_CASE("Pipeline disable_all", "[live][pipeline][using_pipeline]") {
     }
 }
 
-TEST_CASE("Pipeline disable stream", "[live][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline disable stream", "[live][pipeline][using_pipeline][check]") {
 
     auto configurations = pipeline_custom_configurations;
 
@@ -3528,7 +3528,7 @@ TEST_CASE("Pipeline disable stream", "[live][pipeline][using_pipeline]") {
     }
 }
 // The test relies on default profiles that may alter
-TEST_CASE("Pipeline with specific device", "[live][pipeline][using_pipeline]")
+TEST_CASE("Pipeline with specific device", "[live][pipeline][using_pipeline][check]")
 {
 
     rs2::context ctx;
@@ -3590,7 +3590,7 @@ bool operator==(std::vector<profile> streams1, std::vector<profile> streams2)
     return equals;
 }
 
-TEST_CASE("Pipeline start stop", "[live][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline start stop", "[live][pipeline][using_pipeline][check]") {
 
     auto configurations = pipeline_custom_configurations;
 
@@ -3732,7 +3732,7 @@ static const std::map<dev_type, device_profiles> pipeline_configurations_for_ext
                                      { RS2_STREAM_COLOR,    RS2_FORMAT_RGB8, 640, 480, 0 } }, 30, true } },
                         };
 
-TEST_CASE("Pipeline get selection", "[live][pipeline][using_pipeline]") {
+TEST_CASE("Pipeline get selection", "[live][pipeline][using_pipeline][check]") {
     rs2::context ctx;
     auto configurations = pipeline_configurations_for_extrinsic;
 
