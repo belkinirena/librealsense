@@ -48,7 +48,6 @@ int main(int argc, char* const argv[])
         std::cout << "Didn't run any tests!\n";
         return EXIT_FAILURE;
     }
-    std::cout << "Result : " << result << std::endl;
 
     return result;
 }
