@@ -109,9 +109,12 @@ test_script:
             echo $element
         }
     }
-
+    
+    echo "2.1"
     if ($test_failed.length -ne 0)
     {
+        echo $test_failed.length
+        echo "2.2"
         echo $test_failed
         $err_msg = "The following tests failed: "
 
