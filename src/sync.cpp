@@ -136,6 +136,11 @@ namespace librealsense
         _name = create_composite_name(matchers, name);
     }
 
+    composite_matcher::~composite_matcher()
+    {
+        std::lock_guard<std::mutex> lock(sensor_register_before_streaming);
+    }
+
     void composite_matcher::dispatch(frame_holder f, syncronization_environment env)
     {
         std::stringstream s;
@@ -203,6 +208,20 @@ namespace librealsense
                     {
                         LOG_ERROR("Stream matcher not found! stream=" << rs2_stream_to_string(stream_type));
                     }
+
+                    sensor->register_before_streaming_changes_callback([this, stream_id](bool streaming)
+                    {
+                        if (this)
+                        {
+                            std::lock_guard<std::mutex> lock(sensor_register_before_streaming);
+                            if (!streaming)
+                            {
+                                _frames_queue[_matchers[stream_id].get()].clear();
+                                _frames_queue.erase(_matchers[stream_id].get());
+                                _matchers[stream_id]->set_active(false);
+                            }
+                        }
+                    });
                 }
 
                 else if(!matcher->get_active())
@@ -387,6 +406,25 @@ namespace librealsense
             }
         } while (synced_frames.size() > 0);
     }
+
+    void composite_matcher::set_active(const bool active)
+    {
+        LOG_WARNING("set active " << _name << " " << active);
+        _active = active;
+        if (!active)
+        {
+            for (auto m : _matchers)
+            {
+                m.second->set_active(active);
+            }
+        }
+    }
+
+    bool composite_matcher::get_active() const
+    {
+        return _active;
+    }
+
 
     frame_number_composite_matcher::frame_number_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers)
         :composite_matcher(matchers, "FN: ")

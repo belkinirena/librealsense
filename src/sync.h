@@ -88,8 +88,8 @@ namespace librealsense
         virtual ~matcher();
 
         virtual std::string get_name() const;
-        bool get_active() const;
-        void set_active(const bool active);
+        virtual bool get_active() const;
+        virtual void set_active(const bool active);
 
     protected:
        std::vector<stream_id> _streams_id;
@@ -113,13 +113,16 @@ namespace librealsense
     {
     public:
         composite_matcher(std::vector<std::shared_ptr<matcher>> matchers, std::string name);
-
+        virtual ~composite_matcher();
 
         virtual bool are_equivalent(frame_holder& a, frame_holder& b) = 0;
         virtual bool is_smaller_than(frame_holder& a, frame_holder& b) = 0;
         virtual bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing)  = 0;
         virtual void clean_inactive_streams(frame_holder& f) = 0;
         virtual void update_last_arrived(frame_holder& f, matcher* m) = 0;
+
+        virtual bool get_active() const override;
+        virtual void set_active(const bool active) override;
 
         void dispatch(frame_holder f, syncronization_environment env) override;
         std::string frames_to_string(std::vector<librealsense::matcher*> matchers);
@@ -133,6 +136,9 @@ namespace librealsense
         std::map<stream_id, std::shared_ptr<matcher>> _matchers;
         std::map<matcher*, double> _next_expected;
         std::map<matcher*, rs2_timestamp_domain> _next_expected_domain;
+
+    private:
+        std::mutex sensor_register_before_streaming;
     };
 
     class frame_number_composite_matcher : public composite_matcher
