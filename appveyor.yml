@@ -87,40 +87,52 @@ test_script:
 
     $test_failed = @()
 
-    #& cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe -d yes -i [software-device]
+    & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe -d yes -i [software-device]
 
     if ($LASTEXITCODE -ne 0)
     {
+        echo "start check software tests"
         $test_failed +=  $element
-        echo "1"
+        echo "stop check software tests"
     }
 
+    echo "start run records"
+    echo $test_failed
+    echo "stop run records"
     foreach ($element in $records) 
     {
+        echo "start loop"
         echo $test_failed
+        echo "stop loop"
+        
         $url_cur = $url_records_path + $element
 
         & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from $element -d yes -i
 
         if ($LASTEXITCODE -ne 0)
         {
-            $test_failed +=  $element
-            echo "2"
+            echo "start test failed"
+            echo $test_failed
             echo $element
+            $test_failed +=  $element
+            echo $test_failed
+            echo "stop test failed"
         }
     }
     
-    echo "2.1"
     if ($test_failed.length -ne 0)
     {
-        echo $test_failed.length
-        echo "2.2"
+        echo "start final failing tests"
         echo $test_failed
+        echo $test_failed.length
+        echo "stop final failing tests"
         $err_msg = "The following tests failed: "
 
         foreach ($elem in $test_failed)
         {
-            echo "3"
+            echo "start failing loop"
+            echo $elem
+            echo "stop failing loop"
             $err_msg = $err_msg + $elem + ", "
 
         }
