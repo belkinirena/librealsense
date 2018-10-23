@@ -92,6 +92,7 @@ test_script:
     if ($LASTEXITCODE -ne 0)
     {
         $test_failed +=  $element
+        echo "1"
     }
 
     foreach ($element in $records) 
@@ -104,6 +105,7 @@ test_script:
         if ($LASTEXITCODE -ne 0)
         {
             $test_failed +=  $element
+            echo "2"
         }
     }
 
@@ -113,7 +115,7 @@ test_script:
 
         foreach ($elem in $test_failed)
         {
-
+            echo "3"
             $err_msg = $err_msg + $elem + ", "
 
         }
