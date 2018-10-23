@@ -97,7 +97,7 @@ test_script:
 
     foreach ($element in $records) 
     {
-
+        echo $test_failed
         $url_cur = $url_records_path + $element
 
         & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from $element -d yes -i
@@ -106,11 +106,13 @@ test_script:
         {
             $test_failed +=  $element
             echo "2"
+            echo $element
         }
     }
 
     if ($test_failed.length -ne 0)
     {
+        echo $test_failed
         $err_msg = "The following tests failed: "
 
         foreach ($elem in $test_failed)
