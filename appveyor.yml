@@ -96,9 +96,10 @@ test_script:
         echo "stop check software tests"
     }
 
-    echo "start run records"
+    echo "start run recordings"
     echo $test_failed
-    echo "stop run records"
+    echo "stop run recordings"
+    
     foreach ($element in $records) 
     {
         echo "start loop"
