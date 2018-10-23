@@ -71,7 +71,7 @@ test_script:
 
     Invoke-WebRequest -Uri $url_records_list -OutFile $out_records_list
 
-    $records = Get-Content $out_records_list
+    $records = Get-Content $out_records_list -Tail 1
 
     mkdir single_cam
 
