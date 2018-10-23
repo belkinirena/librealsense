@@ -71,7 +71,7 @@ test_script:
 
     Invoke-WebRequest -Uri $url_records_list -OutFile $out_records_list
 
-    $records = Get-Content $out_records_list -Tail 1
+    $records = Get-Content $out_records_list
 
     mkdir single_cam
 
@@ -100,7 +100,7 @@ test_script:
         echo $test_failed
         $url_cur = $url_records_path + $element
 
-        & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from $element -d yes -i "Post-Processing expected output" 
+        & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from $element -d yes -i
 
         if ($LASTEXITCODE -ne 0)
         {
