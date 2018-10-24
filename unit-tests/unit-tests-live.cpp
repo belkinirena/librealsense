@@ -4814,26 +4814,22 @@ TEST_CASE("Syncer try wait for frames", "[live][software-device]") {
     }
 }
 
-TEST_CASE("Projection from recording", "[software-device][using_pipeline][projection][!mayfail]") {
+TEST_CASE("Projection from recording", "[software-device][using_pipeline][projection]") {
     rs2::context ctx;
-    WARN("7");
     if (!make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"))
         return;
-    WARN("8");
     std::string folder_name = get_folder_path(special_folder::temp_folder);
     const std::string filename = folder_name + "single_depth_color_640x480.bag";
     REQUIRE(file_exists(filename));
     auto dev = ctx.load_device(filename);
 
     syncer sync;
-    WARN("9");
     std::vector<sensor> sensors = dev.query_sensors();
     REQUIRE(sensors.size() == 2);
     for (auto s : sensors)
     {
         REQUIRE_NOTHROW(s.open(s.get_stream_profiles().front()));
         REQUIRE_NOTHROW(s.start(sync));
-        WARN("10");
     }
 
     rs2::frame depth;
@@ -4842,28 +4838,22 @@ TEST_CASE("Projection from recording", "[software-device][using_pipeline][projec
 
     while (!depth_profile || !color_profile)
     {
-        WARN("1");
-        frameset frames;
-        REQUIRE(sync.try_wait_for_frames(&frames));
+        frameset frames = sync.wait_for_frames(200);
         REQUIRE(frames.size() > 0);
         if (frames.size() == 1)
         {
-            WARN("2");
             if (frames.get_profile().stream_type() == RS2_STREAM_DEPTH)
             {
-                WARN("3");
                 depth = frames.get_depth_frame();
                 depth_profile = depth.get_profile();
             }
             else
             {
-                WARN("4");
                 color_profile = frames.get_color_frame().get_profile();
             }
         }
         else
         {
-            WARN("5");
             depth = frames.get_depth_frame();
             depth_profile = depth.get_profile();
             color_profile = frames.get_color_frame().get_profile();
