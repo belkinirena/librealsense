@@ -4838,22 +4838,27 @@ TEST_CASE("Projection from recording", "[software-device][using_pipeline][projec
 
     while (!depth_profile || !color_profile)
     {
-        frameset frames = sync.wait_for_frames();
+        std::cout << "1\n";
+        frameset frames = sync.wait_for_frames(200);
         REQUIRE(frames.size() > 0);
         if (frames.size() == 1)
         {
+            std::cout << "2\n";
             if (frames.get_profile().stream_type() == RS2_STREAM_DEPTH)
             {
+                std::cout << "3\n";
                 depth = frames.get_depth_frame();
                 depth_profile = depth.get_profile();
             }
             else
             {
+                std::cout << "4\n";
                 color_profile = frames.get_color_frame().get_profile();
             }
         }
         else
         {
+            std::cout << "5\n";
             depth = frames.get_depth_frame();
             depth_profile = depth.get_profile();
             color_profile = frames.get_color_frame().get_profile();
