@@ -330,8 +330,8 @@ namespace librealsense
 #ifdef WITH_TRACKING
         if (_tm2_context)
         {
-//            auto tm2_devices = tm2_info::pick_tm2_devices(ctx, _tm2_context->get_manager(), _tm2_context->query_devices());
-//           std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
+            auto tm2_devices = tm2_info::pick_tm2_devices(ctx, _tm2_context->get_manager(), _tm2_context->query_devices());
+            std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
         }
 #endif
 
