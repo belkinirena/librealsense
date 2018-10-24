@@ -91,49 +91,29 @@ test_script:
 
     if ($LASTEXITCODE -ne 0)
     {
-        echo "start check software tests"
         $test_failed +=  $element
-        echo "stop check software tests"
     }
 
-    echo "start run recordings"
-    echo $test_failed
-    echo "stop run recordings"
-    
     foreach ($element in $records) 
     {
-        echo "start loop"
-        echo $test_failed
-        echo "stop loop"
-        
+
         $url_cur = $url_records_path + $element
 
         & cmd.exe /c C:/projects/librealsense/build/Debug/live-test.exe from $element -d yes -i
 
         if ($LASTEXITCODE -ne 0)
         {
-            echo "start test failed"
-            echo $test_failed
-            echo $element
             $test_failed +=  $element
-            echo $test_failed
-            echo "stop test failed"
         }
     }
-    
+
     if ($test_failed.length -ne 0)
     {
-        echo "start final failing tests"
-        echo $test_failed
-        echo $test_failed.length
-        echo "stop final failing tests"
         $err_msg = "The following tests failed: "
 
         foreach ($elem in $test_failed)
         {
-            echo "start failing loop"
-            echo $elem
-            echo "stop failing loop"
+
             $err_msg = $err_msg + $elem + ", "
 
         }
