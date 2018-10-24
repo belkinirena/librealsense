@@ -4843,8 +4843,13 @@ TEST_CASE("Projection from recording", "[software-device][using_pipeline][projec
     while (!depth_profile || !color_profile)
     {
         WARN("1");
+        int tries = 5;
         frameset frames;
-        REQUIRE(sync.try_wait_for_frames(&frames, 5000));
+        while (tries > 0)
+        {
+            if (sync.try_wait_for_frames(&frames, 5000) == true) break;
+        }
+        REQUIRE(tries > 0);
         REQUIRE(frames.size() > 0);
         if (frames.size() == 1)
         {
