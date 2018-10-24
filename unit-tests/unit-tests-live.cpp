@@ -4838,7 +4838,7 @@ TEST_CASE("Projection from recording", "[software-device][using_pipeline][projec
 
     while (!depth_profile || !color_profile)
     {
-        frameset frames = sync.wait_for_frames(200);
+        frameset frames = sync.wait_for_frames();
         REQUIRE(frames.size() > 0);
         if (frames.size() == 1)
         {
