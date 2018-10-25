@@ -44,6 +44,25 @@ typedef struct rs2_video_stream
     rs2_intrinsics intrinsics;
 } rs2_video_stream;
 
+typedef struct rs2_motion_stream
+{
+    rs2_stream type;
+    int index;
+    int uid;
+    int fps;
+    rs2_format fmt;
+    rs2_motion_device_intrinsic intrinsics;
+} rs2_motion_stream;
+
+typedef struct rs2_pose_stream
+{
+    rs2_stream type;
+    int index;
+    int uid;
+    int fps;
+    rs2_format fmt;
+} rs2_pose_stream;
+
 /** \brief All the parameters are requaired to define video frame*/
 typedef struct rs2_software_video_frame
 {
@@ -56,6 +75,19 @@ typedef struct rs2_software_video_frame
     int frame_number;
     const rs2_stream_profile* profile;
 } rs2_software_video_frame;
+
+typedef struct rs2_software_motion_frame
+{
+    rs2_time_t timestamp;
+    rs2_timestamp_domain domain;
+    int frame_number;
+    const rs2_stream_profile* profile;
+} rs2_software_motion_frame;
+
+typedef struct rs2_software_pose_frame
+{
+    const rs2_stream_profile* profile;
+} rs2_software_pose_frame;
 
 /**
  * Create librealsense context that will try to record all operations over librealsense into a file
@@ -115,6 +147,10 @@ rs2_sensor* rs2_software_device_add_sensor(rs2_device* dev, const char* sensor_n
  */
 void rs2_software_sensor_on_video_frame(rs2_sensor* sensor, rs2_software_video_frame frame, rs2_error** error);
 
+void rs2_software_sensor_on_motion_frame(rs2_sensor* sensor, rs2_software_motion_frame frame, rs2_error** error);
+
+void rs2_software_sensor_on_pose_frame(rs2_sensor* sensor, rs2_software_pose_frame frame, rs2_error** error);
+
 /**
 * Set frame metadata for the upcoming frames
 * \param[in] sensor the software sensor
@@ -139,6 +175,10 @@ void rs2_software_device_create_matcher(rs2_device* dev, rs2_matchers matcher, r
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 rs2_stream_profile* rs2_software_sensor_add_video_stream(rs2_sensor* sensor, rs2_video_stream video_stream, rs2_error** error);
+
+rs2_stream_profile* rs2_software_sensor_add_motion_stream(rs2_sensor* sensor, rs2_motion_stream motion_stream, rs2_error** error);
+
+rs2_stream_profile* rs2_software_sensor_add_pose_stream(rs2_sensor* sensor, rs2_pose_stream pose_stream, rs2_error** error);
 
 /**
  * Add read only option to sensor
