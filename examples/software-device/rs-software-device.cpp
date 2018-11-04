@@ -184,6 +184,7 @@ int main(int argc, char * argv[]) try
         rs2::frameset fset = sync.wait_for_frames();
         rs2::frame depth = fset.first_or_default(RS2_STREAM_DEPTH);
         rs2::frame color = fset.first_or_default(RS2_STREAM_COLOR);
+
         if (depth && color)
         {
             if (auto as_depth = depth.as<rs2::depth_frame>())

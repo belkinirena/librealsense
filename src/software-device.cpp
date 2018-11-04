@@ -52,7 +52,7 @@ namespace librealsense
         return matcher_factory::create(_matcher, profiles);
     }
 
-    std::shared_ptr<stream_profile_interface> software_sensor::add_stream(rs2_video_stream video_stream)
+    std::shared_ptr<stream_profile_interface> software_sensor::add_video_stream(rs2_video_stream video_stream)
     {
         auto exist = (std::find_if(_profiles.begin(), _profiles.end(), [&](std::shared_ptr<stream_profile_interface> profile)
         {
@@ -83,7 +83,7 @@ namespace librealsense
         return profile;
     }
 
-    std::shared_ptr<stream_profile_interface> software_sensor::add_stream(rs2_motion_stream motion_stream)
+    std::shared_ptr<stream_profile_interface> software_sensor::add_motion_stream(rs2_motion_stream motion_stream)
     {
         auto exist = (std::find_if(_profiles.begin(), _profiles.end(), [&](std::shared_ptr<stream_profile_interface> profile)
         {
@@ -113,7 +113,7 @@ namespace librealsense
         return profile;
     }
 
-    std::shared_ptr<stream_profile_interface> software_sensor::add_stream(rs2_pose_stream pose_stream)
+    std::shared_ptr<stream_profile_interface> software_sensor::add_pose_stream(rs2_pose_stream pose_stream)
     {
         auto exist = (std::find_if(_profiles.begin(), _profiles.end(), [&](std::shared_ptr<stream_profile_interface> profile)
         {
@@ -198,7 +198,7 @@ namespace librealsense
         _metadata_map[key] = value;
     }
 
-    void software_sensor::on_frame(rs2_software_video_frame software_frame)
+    void software_sensor::on_video_frame(rs2_software_video_frame software_frame)
     {
         frame_additional_data data;
         data.timestamp = software_frame.timestamp;
@@ -239,7 +239,7 @@ namespace librealsense
         _source.invoke_callback(frame);
     }
 
-    void software_sensor::on_frame(rs2_software_motion_frame software_frame)
+    void software_sensor::on_motion_frame(rs2_software_motion_frame software_frame)
     {
         frame_additional_data data;
         data.timestamp = software_frame.timestamp;
@@ -276,7 +276,7 @@ namespace librealsense
         _source.invoke_callback(frame);
     }
 
-    void software_sensor::on_frame(rs2_software_pose_frame software_frame)
+    void software_sensor::on_pose_frame(rs2_software_pose_frame software_frame)
     {
         frame_additional_data data;
         data.timestamp = software_frame.timestamp;
