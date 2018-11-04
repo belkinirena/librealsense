@@ -78,7 +78,7 @@ namespace rs2
         *
         * \param[in] video_stream   all the parameters that required to defind video stream
         */
-        stream_profile add_video_stream(rs2_video_stream video_stream)
+        stream_profile add_stream(rs2_video_stream video_stream)
         {
             rs2_error* e = nullptr;
 
@@ -88,7 +88,7 @@ namespace rs2
             return stream;
         }
 
-        stream_profile add_motion_stream(rs2_motion_stream motion_stream)
+        stream_profile add_stream(rs2_motion_stream motion_stream)
         {
             rs2_error* e = nullptr;
 
@@ -98,7 +98,7 @@ namespace rs2
             return stream;
         }
 
-        stream_profile add_motion_stream(rs2_pose_stream pose_stream)
+        stream_profile add_stream(rs2_pose_stream pose_stream)
         {
             rs2_error* e = nullptr;
 
@@ -113,21 +113,21 @@ namespace rs2
         *
         * \param[in] frame   all the parameters that required to define video frame
         */
-        void on_video_frame(rs2_software_video_frame frame)
+        void on_frame(rs2_software_video_frame frame)
         {
             rs2_error* e = nullptr;
             rs2_software_sensor_on_video_frame(_sensor.get(), frame, &e);
             error::handle(e);
         }
 
-        void on_motion_frame(rs2_software_motion_frame frame)
+        void on_frame(rs2_software_motion_frame frame)
         {
             rs2_error* e = nullptr;
             rs2_software_sensor_on_motion_frame(_sensor.get(), frame, &e);
             error::handle(e);
         }
 
-        void on_pose_frame(rs2_software_pose_frame frame)
+        void on_frame(rs2_software_pose_frame frame)
         {
             rs2_error* e = nullptr;
             rs2_software_sensor_on_pose_frame(_sensor.get(), frame, &e);

@@ -224,7 +224,7 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
                 test_cfg.focal_length ,test_cfg.focal_length,   // Focal Length
                 RS2_DISTORTION_BROWN_CONRADY ,{ 0,0,0,0,0 } };
 
-            auto depth_stream_profile = depth_sensor.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, width, height, 30, depth_bpp, RS2_FORMAT_Z16, depth_intrinsics });
+            auto depth_stream_profile = depth_sensor.add_stream({ RS2_STREAM_DEPTH, 0, 0, width, height, 30, depth_bpp, RS2_FORMAT_Z16, depth_intrinsics });
             depth_sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, test_cfg.depth_units);
             depth_sensor.add_read_only_option(RS2_OPTION_STEREO_BASELINE, test_cfg.stereo_baseline);
 
@@ -239,7 +239,7 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
             for (auto i = 0; i < frames; i++)
             {
                 // Inject input frame
-                depth_sensor.on_video_frame({ test_cfg._input_frames[i].data(), // Frame pixels from capture API
+                depth_sensor.on_frame({ test_cfg._input_frames[i].data(), // Frame pixels from capture API
                     [](void*) {},                   // Custom deleter (if required)
                     (int)test_cfg.input_res_x *depth_bpp,    // Stride
                     depth_bpp,                          // Bytes-per-pixels
@@ -298,7 +298,7 @@ TEST_CASE("Post-Processing Filters metadata validation", "[software-device][post
                 test_cfg.focal_length ,test_cfg.focal_length,   // Focal Length
                 RS2_DISTORTION_BROWN_CONRADY ,{ 0,0,0,0,0 } };
 
-            auto depth_stream_profile = depth_sensor.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, width, height, 30, depth_bpp, RS2_FORMAT_Z16, depth_intrinsics });
+            auto depth_stream_profile = depth_sensor.add_stream({ RS2_STREAM_DEPTH, 0, 0, width, height, 30, depth_bpp, RS2_FORMAT_Z16, depth_intrinsics });
 
             // Establish the required chain of filters
             dev.create_matcher(RS2_MATCHER_DLR_C);
@@ -315,7 +315,7 @@ TEST_CASE("Post-Processing Filters metadata validation", "[software-device][post
                     depth_sensor.set_metadata((rs2_frame_metadata_value)i, rand());
 
                 // Inject input frame
-                depth_sensor.on_video_frame({ test_cfg._input_frames[i].data(), // Frame pixels from capture API
+                depth_sensor.on_frame({ test_cfg._input_frames[i].data(), // Frame pixels from capture API
                     [](void*) {},                   // Custom deleter (if required)
                     (int)test_cfg.input_res_x *depth_bpp,    // Stride
                     depth_bpp,                          // Bytes-per-pixels

@@ -4500,8 +4500,8 @@ TEST_CASE("Syncer sanity with software-device device", "[live][software-device]"
 
         rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
 
-        s.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
-        s.add_video_stream({ RS2_STREAM_INFRARED, 1, 1, W, H,60, BPP, RS2_FORMAT_Y8, intrinsics });
+        s.add_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
+        s.add_stream({ RS2_STREAM_INFRARED, 1, 1, W, H,60, BPP, RS2_FORMAT_Y8, intrinsics });
         dev->create_matcher(RS2_MATCHER_DI);
 
         frame_queue q;
@@ -4522,13 +4522,13 @@ TEST_CASE("Syncer sanity with software-device device", "[live][software-device]"
             auto shared_dev = weak_dev.lock();
             if (shared_dev == nullptr)
                 return;
-            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth });
-            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, ir });
+            s.on_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth });
+            s.on_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, ir });
 
-            s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, depth });
-            s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, ir });
+            s.on_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, depth });
+            s.on_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, ir });
 
-            s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, ir });
+            s.on_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, ir });
         });
         t.detach();
 
@@ -4594,8 +4594,8 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with software-device de
         auto s = dev->add_sensor("software_sensor");
 
         rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
-        s.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
-        s.add_video_stream({ RS2_STREAM_INFRARED, 1, 1, W, H,60,  BPP, RS2_FORMAT_Y8, intrinsics });
+        s.add_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
+        s.add_stream({ RS2_STREAM_INFRARED, 1, 1, W, H,60,  BPP, RS2_FORMAT_Y8, intrinsics });
         dev->create_matcher(RS2_MATCHER_DI);
         frame_queue q;
 
@@ -4613,18 +4613,18 @@ TEST_CASE("Syncer clean_inactive_streams by frame number with software-device de
             auto shared_dev = weak_dev.lock();
             if (shared_dev == nullptr)
                 return;
-            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 1, depth });
-            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 1, ir });
+            s.on_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 1, depth });
+            s.on_frame({ pixels.data(), [](void*) {}, 0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 1, ir });
 
-            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 3, depth });
+            s.on_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 3, depth });
 
-            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 4, depth });
+            s.on_frame({ pixels.data(), [](void*) {}, 0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 4, depth });
 
-            s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, depth });
+            s.on_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, depth });
 
-            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, depth });
+            s.on_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, depth });
 
-            s.on_video_frame({ pixels.data(), [](void*) {}, 0, 0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth });
+            s.on_frame({ pixels.data(), [](void*) {}, 0, 0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth });
         });
 
         t.detach();
@@ -4741,8 +4741,8 @@ TEST_CASE("Syncer try wait for frames", "[live][software-device]") {
 
         const int W = 640, H = 480, BPP = 2;
         rs2_intrinsics intrinsics{ W, H, 0, 0, 0, 0, RS2_DISTORTION_NONE ,{ 0,0,0,0,0 } };
-        s.add_video_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
-        s.add_video_stream({ RS2_STREAM_INFRARED, 1, 1, W, H,60, BPP, RS2_FORMAT_Y8, intrinsics });
+        s.add_stream({ RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, intrinsics });
+        s.add_stream({ RS2_STREAM_INFRARED, 1, 1, W, H,60, BPP, RS2_FORMAT_Y8, intrinsics });
         dev->create_matcher(RS2_MATCHER_DI);
 
         auto profiles = s.get_stream_profiles();
@@ -4760,13 +4760,13 @@ TEST_CASE("Syncer try wait for frames", "[live][software-device]") {
             auto shared_dev = weak_dev.lock();
             if (shared_dev == nullptr)
                 return;
-            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth });
-            s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, ir });
+            s.on_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth });
+            s.on_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, ir });
 
-            s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, depth });
-            s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, ir });
+            s.on_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, depth });
+            s.on_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, ir });
 
-            s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, ir });
+            s.on_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, ir });
         });
         t.detach();
 
@@ -4909,3 +4909,148 @@ TEST_CASE("Projection from recording", "[software-device][using_pipeline][projec
     CAPTURE(count);
     REQUIRE(count * 100 / (depth_intrin.width * depth_intrin.height) < MAX_ERROR_PERCENTAGE);
 }
+
+TEST_CASE("6dof from software-device", "[software-device][6dof]")
+{
+    rs2::software_device dev;
+
+    auto sensor = dev.add_sensor("Pose"); // Define single sensor
+    rs2_pose_stream stream = { RS2_STREAM_POSE, 0, 0, 200, RS2_FORMAT_6DOF };
+    auto stream_profile = sensor.add_stream(stream);
+
+    rs2::syncer sync;
+
+    sensor.open(stream_profile);
+    sensor.start(sync);
+
+    rs2_software_pose_frame::pose_frame_info info = { { 1, 1, 1 },{ 2, 2, 2 },{ 3, 3, 3 },{ 4, 4 ,4 ,4 },{ 5, 5, 5 },{ 6, 6 ,6 }, 0, 0 };
+    rs2_software_pose_frame frame = { &info, [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK , 0, stream_profile};
+    sensor.on_frame(frame);
+
+    rs2::frameset fset = sync.wait_for_frames();
+    rs2::frame pose = fset.first_or_default(RS2_STREAM_POSE);
+    REQUIRE(pose);
+    REQUIRE(((memcmp(frame.data, pose.get_data(), sizeof(rs2_software_pose_frame::pose_frame_info)) == 0) &&
+        frame.frame_number == pose.get_frame_number() &&
+        frame.domain == pose.get_frame_timestamp_domain() &&
+        frame.timestamp == pose.get_timestamp()));
+
+}
+
+TEST_CASE("motion from software-device", "[software-device][record]")
+{
+    rs2::software_device dev;
+
+    auto sensor = dev.add_sensor("Motion"); // Define single sensor
+    rs2_motion_device_intrinsic intrinsics = { { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },{ 2, 2, 2 },{ 3, 3 ,3 } };
+    rs2_motion_stream stream = { RS2_STREAM_ACCEL, 0, 0, 200, RS2_FORMAT_MOTION_RAW, intrinsics };
+    auto stream_profile = sensor.add_stream(stream);
+
+    rs2::syncer sync;
+
+    sensor.open(stream_profile);
+    sensor.start(sync);
+
+    float data[3] = { 1, 1, 1 };
+    rs2_software_motion_frame frame = { data, [](void*) {}, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 0, stream_profile };
+    sensor.on_frame(frame);
+
+    rs2::frameset fset = sync.wait_for_frames();
+    rs2::frame motion = fset.first_or_default(RS2_STREAM_ACCEL);
+    REQUIRE(motion);
+    REQUIRE(((memcmp(frame.data, motion.get_data(), sizeof(float) * 3) == 0) &&
+        frame.frame_number == motion.get_frame_number() &&
+        frame.domain == motion.get_frame_timestamp_domain() &&
+        frame.timestamp == motion.get_timestamp()));
+
+}
+
+TEST_CASE("Record from software-device", "[software-device][record]")
+{
+    const int W = 640;
+    const int H = 480;
+    const int BPP = 2;
+
+    std::string folder_name = get_folder_path(special_folder::temp_folder);
+    const std::string filename = folder_name + "recording.bag";
+
+    //Software device, streams and frames definition
+    rs2::software_device dev;
+
+    auto sensor = dev.add_sensor("Synthetic");
+    rs2_intrinsics depth_intrinsics = { W, H, (float)W / 2, H / 2, (float)W, (float)H,
+        RS2_DISTORTION_BROWN_CONRADY ,{ 0,0,0,0,0 } };
+    rs2_video_stream video_stream = { RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, depth_intrinsics };
+    auto depth_stream_profile = sensor.add_stream(video_stream);
+
+    rs2_motion_device_intrinsic motion_intrinsics = { { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },{ 2, 2, 2 },{ 3, 3 ,3 } };
+    rs2_motion_stream motion_stream = { RS2_STREAM_ACCEL, 0, 1, 200, RS2_FORMAT_MOTION_RAW, motion_intrinsics };
+    auto motion_stream_profile = sensor.add_stream(motion_stream);
+
+    rs2_pose_stream pose_stream = { RS2_STREAM_POSE, 0, 2, 200, RS2_FORMAT_6DOF };
+    auto pose_stream_profile = sensor.add_stream(pose_stream);
+    rs2::syncer sync;
+    std::vector<stream_profile> stream_profiles;
+    stream_profiles.push_back(depth_stream_profile);
+    stream_profiles.push_back(motion_stream_profile);
+    stream_profiles.push_back(pose_stream_profile);
+
+    std::vector<uint8_t> pixels(W * H * BPP, 100);
+    rs2_software_video_frame video_frame = { pixels.data(), [](void*) {},W*BPP, BPP, 10000, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 0, depth_stream_profile };
+    float motion_data[3] = { 1, 1, 1 };
+    rs2_software_motion_frame motion_frame = { motion_data, [](void*) {}, 20000, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 0, motion_stream_profile };
+    rs2_software_pose_frame::pose_frame_info pose_info = { { 1, 1, 1 },{ 2, 2, 2 },{ 3, 3, 3 },{ 4, 4 ,4 ,4 },{ 5, 5, 5 },{ 6, 6 ,6 }, 0, 0 };
+    rs2_software_pose_frame pose_frame = { &pose_info, [](void*) {}, 30000, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK , 0, pose_stream_profile };
+
+    //Record software device
+    {
+        recorder recorder(filename, dev);
+        sensor.open(stream_profiles);
+        sensor.start(sync);
+        sensor.on_frame(video_frame);
+        sensor.on_frame(motion_frame);
+        sensor.on_frame(pose_frame);
+    }
+
+    //Playback software device
+    rs2::context ctx;
+    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0")));
+    auto player_dev = ctx.load_device(filename);
+
+    syncer player_sync;
+    auto s = player_dev.query_sensors()[0];
+    REQUIRE_NOTHROW(s.open(s.get_stream_profiles()));
+    REQUIRE_NOTHROW(s.start(player_sync));
+    rs2::frameset fset;
+    rs2::frame recorded_depth, recorded_accel, recorded_pose;
+    while (player_sync.try_wait_for_frames(&fset))
+    {
+        if (fset.first_or_default(RS2_STREAM_DEPTH))
+            recorded_depth = fset.first_or_default(RS2_STREAM_DEPTH);
+        if (fset.first_or_default(RS2_STREAM_ACCEL))
+            recorded_accel = fset.first_or_default(RS2_STREAM_ACCEL);
+        if (fset.first_or_default(RS2_STREAM_POSE))
+            recorded_pose = fset.first_or_default(RS2_STREAM_POSE);
+    }
+
+    REQUIRE(recorded_depth);
+    REQUIRE(recorded_accel);
+    REQUIRE(recorded_pose);
+
+    //Compare input frames with recorded frames
+    REQUIRE(((memcmp(video_frame.pixels, recorded_depth.get_data(), W * H * BPP) == 0) &&
+        video_frame.frame_number == recorded_depth.get_frame_number() &&
+        video_frame.domain == recorded_depth.get_frame_timestamp_domain() &&
+        video_frame.timestamp == recorded_depth.get_timestamp()));
+
+    REQUIRE(((memcmp(motion_frame.data, recorded_accel.get_data(), sizeof(float) * 3) == 0) &&
+        motion_frame.frame_number == recorded_accel.get_frame_number() &&
+        motion_frame.domain == recorded_accel.get_frame_timestamp_domain() &&
+        motion_frame.timestamp == recorded_accel.get_timestamp()));
+
+    REQUIRE(((memcmp(pose_frame.data, recorded_pose.get_data(), sizeof(rs2_software_pose_frame::pose_frame_info)) == 0) &&
+        pose_frame.frame_number == recorded_pose.get_frame_number() &&
+        pose_frame.domain == recorded_pose.get_frame_timestamp_domain() &&
+        pose_frame.timestamp == recorded_pose.get_timestamp()));
+}
+

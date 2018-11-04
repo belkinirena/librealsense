@@ -78,6 +78,8 @@ typedef struct rs2_software_video_frame
 
 typedef struct rs2_software_motion_frame
 {
+    void* data;
+    void(*deleter)(void*);
     rs2_time_t timestamp;
     rs2_timestamp_domain domain;
     int frame_number;
@@ -86,6 +88,22 @@ typedef struct rs2_software_motion_frame
 
 typedef struct rs2_software_pose_frame
 {
+    struct pose_frame_info
+    {
+        float translation[3];
+        float velocity[3];
+        float acceleration[3];
+        float rotation[4];
+        float angular_velocity[3];
+        float angular_acceleration[3];
+        int tracker_confidence;
+        int mapper_confidence;
+    };
+    void* data;
+    void(*deleter)(void*);
+    rs2_time_t timestamp;
+    rs2_timestamp_domain domain;
+    int frame_number;
     const rs2_stream_profile* profile;
 } rs2_software_pose_frame;
 

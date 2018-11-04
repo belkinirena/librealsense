@@ -52,7 +52,7 @@ namespace librealsense
         return matcher_factory::create(_matcher, profiles);
     }
 
-    std::shared_ptr<stream_profile_interface> software_sensor::add_video_stream(rs2_video_stream video_stream)
+    std::shared_ptr<stream_profile_interface> software_sensor::add_stream(rs2_video_stream video_stream)
     {
         auto exist = (std::find_if(_profiles.begin(), _profiles.end(), [&](std::shared_ptr<stream_profile_interface> profile)
         {
@@ -83,7 +83,7 @@ namespace librealsense
         return profile;
     }
 
-    std::shared_ptr<stream_profile_interface> software_sensor::add_motion_stream(rs2_motion_stream motion_stream)
+    std::shared_ptr<stream_profile_interface> software_sensor::add_stream(rs2_motion_stream motion_stream)
     {
         auto exist = (std::find_if(_profiles.begin(), _profiles.end(), [&](std::shared_ptr<stream_profile_interface> profile)
         {
@@ -113,7 +113,7 @@ namespace librealsense
         return profile;
     }
 
-    std::shared_ptr<stream_profile_interface> software_sensor::add_pose_stream(rs2_pose_stream pose_stream)
+    std::shared_ptr<stream_profile_interface> software_sensor::add_stream(rs2_pose_stream pose_stream)
     {
         auto exist = (std::find_if(_profiles.begin(), _profiles.end(), [&](std::shared_ptr<stream_profile_interface> profile)
         {
@@ -198,7 +198,7 @@ namespace librealsense
         _metadata_map[key] = value;
     }
 
-    void software_sensor::on_video_frame(rs2_software_video_frame software_frame)
+    void software_sensor::on_frame(rs2_software_video_frame software_frame)
     {
         frame_additional_data data;
         data.timestamp = software_frame.timestamp;
@@ -239,7 +239,7 @@ namespace librealsense
         _source.invoke_callback(frame);
     }
 
-    void software_sensor::on_motion_frame(rs2_software_motion_frame software_frame)
+    void software_sensor::on_frame(rs2_software_motion_frame software_frame)
     {
         frame_additional_data data;
         data.timestamp = software_frame.timestamp;
@@ -261,10 +261,7 @@ namespace librealsense
             data.metadata_size += static_cast<uint32_t>(size_of_data);
         }
 
-        rs2_extension extension = software_frame.profile->profile->get_stream_type() == RS2_STREAM_DEPTH ?
-            RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME;
-
-        auto frame = _source.alloc_frame(extension, 0, data, false);
+        auto frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, 0, data, false);
         if (!frame)
         {
             return;
@@ -274,8 +271,45 @@ namespace librealsense
 
         frame->set_stream(std::dynamic_pointer_cast<stream_profile_interface>(software_frame.profile->profile->shared_from_this()));
         frame->attach_continuation(frame_continuation{ [=]() {
-            software_frame.deleter(software_frame.pixels);
-        }, software_frame.pixels });
+            software_frame.deleter(software_frame.data);
+        }, software_frame.data });
+        _source.invoke_callback(frame);
+    }
+
+    void software_sensor::on_frame(rs2_software_pose_frame software_frame)
+    {
+        frame_additional_data data;
+        data.timestamp = software_frame.timestamp;
+        data.timestamp_domain = software_frame.domain;
+        data.frame_number = software_frame.frame_number;
+
+        data.metadata_size = 0;
+        for (auto i : _metadata_map)
+        {
+            auto size_of_enum = sizeof(rs2_frame_metadata_value);
+            auto size_of_data = sizeof(rs2_metadata_type);
+            if (data.metadata_size + size_of_enum + size_of_data > 255)
+            {
+                continue; //stop adding metadata to frame
+            }
+            memcpy(data.metadata_blob.data() + data.metadata_size, &i.first, size_of_enum);
+            data.metadata_size += static_cast<uint32_t>(size_of_enum);
+            memcpy(data.metadata_blob.data() + data.metadata_size, &i.second, size_of_data);
+            data.metadata_size += static_cast<uint32_t>(size_of_data);
+        }
+
+        auto frame = _source.alloc_frame(RS2_EXTENSION_POSE_FRAME, 0, data, false);
+        if (!frame)
+        {
+            return;
+        }
+        auto pid_profile = dynamic_cast<pose_stream_profile_interface*>(software_frame.profile->profile);
+        auto pid_frame = dynamic_cast<pose_frame*>(frame);
+
+        frame->set_stream(std::dynamic_pointer_cast<stream_profile_interface>(software_frame.profile->profile->shared_from_this()));
+        frame->attach_continuation(frame_continuation{ [=]() {
+            software_frame.deleter(software_frame.data);
+        }, software_frame.data });
         _source.invoke_callback(frame);
     }
 
