@@ -140,14 +140,14 @@ int main(int argc, char * argv[]) try
     auto depth_sensor = dev.add_sensor("Depth"); // Define single sensor
     auto color_sensor = dev.add_sensor("Color"); // Define single sensor
 
-    auto depth_stream = depth_sensor.add_video_stream({  RS2_STREAM_DEPTH, 0, 0,
+    auto depth_stream = depth_sensor.add_stream({  RS2_STREAM_DEPTH, 0, 0,
                                 W, H, 60, BPP,
                                 RS2_FORMAT_Z16, depth_intrinsics });
 
     depth_sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, 0.001f);
 
 
-    auto color_stream = color_sensor.add_video_stream({  RS2_STREAM_COLOR, 0, 1, texture.x,
+    auto color_stream = color_sensor.add_stream({  RS2_STREAM_COLOR, 0, 1, texture.x,
                                 texture.y, 60, texture.bpp,
                                 RS2_FORMAT_RGBA8, color_intrinsics });
 
@@ -166,14 +166,14 @@ int main(int argc, char * argv[]) try
     {
         synthetic_frame& depth_frame = app_data.get_synthetic_depth(app_state);
 
-        depth_sensor.on_video_frame({ depth_frame.frame.data(), // Frame pixels from capture API
+        depth_sensor.on_frame({ depth_frame.frame.data(), // Frame pixels from capture API
             [](void*) {}, // Custom deleter (if required)
             depth_frame.x*depth_frame.bpp, depth_frame.bpp, // Stride and Bytes-per-pixel
             (rs2_time_t)frame_number * 16, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, frame_number, // Timestamp, Frame# for potential sync services
             depth_stream });
 
 
-        color_sensor.on_video_frame({ texture.frame.data(), // Frame pixels from capture API
+        color_sensor.on_frame({ texture.frame.data(), // Frame pixels from capture API
             [](void*) {}, // Custom deleter (if required)
             texture.x*texture.bpp, texture.bpp, // Stride and Bytes-per-pixel
             (rs2_time_t)frame_number * 16, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, frame_number, // Timestamp, Frame# for potential sync services
@@ -184,7 +184,6 @@ int main(int argc, char * argv[]) try
         rs2::frameset fset = sync.wait_for_frames();
         rs2::frame depth = fset.first_or_default(RS2_STREAM_DEPTH);
         rs2::frame color = fset.first_or_default(RS2_STREAM_COLOR);
-
         if (depth && color)
         {
             if (auto as_depth = depth.as<rs2::depth_frame>())
