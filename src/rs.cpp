@@ -1933,7 +1933,7 @@ void rs2_software_sensor_on_motion_frame(rs2_sensor* sensor, rs2_software_motion
     auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
     return bs->on_motion_frame(frame);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, sensor)
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, frame.data)
 
 void rs2_software_sensor_on_pose_frame(rs2_sensor* sensor, rs2_software_pose_frame frame, rs2_error** error) BEGIN_API_CALL
 {
@@ -1941,7 +1941,7 @@ void rs2_software_sensor_on_pose_frame(rs2_sensor* sensor, rs2_software_pose_fra
     auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
     return bs->on_pose_frame(frame);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, sensor)
+HANDLE_EXCEPTIONS_AND_RETURN(, sensor, frame.data)
 
 void rs2_software_sensor_set_metadata(rs2_sensor* sensor, rs2_frame_metadata_value key, rs2_metadata_type value, rs2_error** error) BEGIN_API_CALL
 {

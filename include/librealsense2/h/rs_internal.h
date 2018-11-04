@@ -44,6 +44,7 @@ typedef struct rs2_video_stream
     rs2_intrinsics intrinsics;
 } rs2_video_stream;
 
+/** \brief All the parameters are requaired to defind motion stream*/
 typedef struct rs2_motion_stream
 {
     rs2_stream type;
@@ -54,6 +55,7 @@ typedef struct rs2_motion_stream
     rs2_motion_device_intrinsic intrinsics;
 } rs2_motion_stream;
 
+/** \brief All the parameters are requaired to defind pose stream*/
 typedef struct rs2_pose_stream
 {
     rs2_stream type;
@@ -76,6 +78,7 @@ typedef struct rs2_software_video_frame
     const rs2_stream_profile* profile;
 } rs2_software_video_frame;
 
+/** \brief All the parameters are requaired to define motion frame*/
 typedef struct rs2_software_motion_frame
 {
     void* data;
@@ -86,6 +89,7 @@ typedef struct rs2_software_motion_frame
     const rs2_stream_profile* profile;
 } rs2_software_motion_frame;
 
+/** \brief All the parameters are requaired to define pose frame*/
 typedef struct rs2_software_pose_frame
 {
     struct pose_frame_info
@@ -158,15 +162,27 @@ rs2_device* rs2_create_software_device(rs2_error** error);
 rs2_sensor* rs2_software_device_add_sensor(rs2_device* dev, const char* sensor_name, rs2_error** error);
 
 /**
- * Inject frame to software sonsor
+ * Inject video frame to software sonsor
  * \param[in] sensor the software sensor
  * \param[in] frame all the frame components
  * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
  */
 void rs2_software_sensor_on_video_frame(rs2_sensor* sensor, rs2_software_video_frame frame, rs2_error** error);
 
+/**
+* Inject motion frame to software sonsor
+* \param[in] sensor the software sensor
+* \param[in] frame all the frame components
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
 void rs2_software_sensor_on_motion_frame(rs2_sensor* sensor, rs2_software_motion_frame frame, rs2_error** error);
 
+/**
+* Inject pose frame to software sonsor
+* \param[in] sensor the software sensor
+* \param[in] frame all the frame components
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
 void rs2_software_sensor_on_pose_frame(rs2_sensor* sensor, rs2_software_pose_frame frame, rs2_error** error);
 
 /**
@@ -194,8 +210,20 @@ void rs2_software_device_create_matcher(rs2_device* dev, rs2_matchers matcher, r
  */
 rs2_stream_profile* rs2_software_sensor_add_video_stream(rs2_sensor* sensor, rs2_video_stream video_stream, rs2_error** error);
 
+/**
+* Add motion stream to sensor
+* \param[in] sensor the software sensor
+* \param[in] video_stream all the stream components
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
 rs2_stream_profile* rs2_software_sensor_add_motion_stream(rs2_sensor* sensor, rs2_motion_stream motion_stream, rs2_error** error);
 
+/**
+* Add pose stream to sensor
+* \param[in] sensor the software sensor
+* \param[in] video_stream all the stream components
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
 rs2_stream_profile* rs2_software_sensor_add_pose_stream(rs2_sensor* sensor, rs2_pose_stream pose_stream, rs2_error** error);
 
 /**
