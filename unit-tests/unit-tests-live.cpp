@@ -4989,6 +4989,7 @@ TEST_CASE("Record from software-device", "[software-device][record]")
 
     rs2_pose_stream pose_stream = { RS2_STREAM_POSE, 0, 2, 200, RS2_FORMAT_6DOF };
     auto pose_stream_profile = sensor.add_pose_stream(pose_stream);
+
     rs2::syncer sync;
     std::vector<stream_profile> stream_profiles;
     stream_profiles.push_back(depth_stream_profile);
