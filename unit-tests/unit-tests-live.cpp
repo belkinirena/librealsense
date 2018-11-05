@@ -5015,7 +5015,6 @@ TEST_CASE("Record from software-device", "[software-device][record]")
 
     //Playback software device
     rs2::context ctx;
-    REQUIRE(make_context(SECTION_FROM_TEST_NAME, &ctx, "2.13.0"));
     auto player_dev = ctx.load_device(filename);
 
     syncer player_sync;
