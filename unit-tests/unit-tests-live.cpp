@@ -4910,7 +4910,7 @@ TEST_CASE("Projection from recording", "[software-device][using_pipeline][projec
     REQUIRE(count * 100 / (depth_intrin.width * depth_intrin.height) < MAX_ERROR_PERCENTAGE);
 }
 
-TEST_CASE("6dof from software-device", "[software-device][6dof]")
+TEST_CASE("software-device pose stream", "[software-device]")
 {
     rs2::software_device dev;
 
@@ -4937,7 +4937,7 @@ TEST_CASE("6dof from software-device", "[software-device][6dof]")
 
 }
 
-TEST_CASE("motion from software-device", "[software-device][record]")
+TEST_CASE("software-device motion stream", "[software-device]")
 {
     rs2::software_device dev;
 
@@ -4965,7 +4965,7 @@ TEST_CASE("motion from software-device", "[software-device][record]")
 
 }
 
-TEST_CASE("Record from software-device", "[software-device][record]")
+TEST_CASE("Record software-device", "[software-device][record]")
 {
     const int W = 640;
     const int H = 480;
