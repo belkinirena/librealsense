@@ -217,6 +217,34 @@ std::pair<std::vector<sensor>, std::vector<profile>> configure_all_supported_str
     return{ sensors, profiles };
 }
 
+TEST_CASE("Record sanity", "[live]") {
+    rs2::log_to_file(RS2_LOG_SEVERITY_WARN, "new_log2.txt");
+    rs2::context ctx;
+
+    auto list = ctx.query_devices();
+    while (list.size() == 0)
+        list = ctx.query_devices();
+
+    auto dev = list[0];
+
+    rs2::syncer sync;
+
+    recorder recorder("check.bag", dev);
+
+    for (auto s : dev.query_sensors())
+    {
+        s.open(s.get_stream_profiles());
+        s.start(sync);
+    }
+
+    Sleep(10000);
+
+    for (auto s : dev.query_sensors())
+    {
+        s.stop();
+        s.close();
+    }
+}
 TEST_CASE("Sync sanity", "[live]") {
 
     rs2::context ctx;
@@ -4909,3 +4937,4 @@ TEST_CASE("Projection from recording", "[software-device][using_pipeline][projec
     CAPTURE(count);
     REQUIRE(count * 100 / (depth_intrin.width * depth_intrin.height) < MAX_ERROR_PERCENTAGE);
 }
+

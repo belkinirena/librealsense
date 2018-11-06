@@ -25,7 +25,7 @@ namespace librealsense
         explicit ros_writer(const std::string& file) : m_file_path(file)
         {
             m_bag.open(file, rosbag::BagMode::Write);
-            m_bag.setCompression(rosbag::CompressionType::LZ4);
+            //m_bag.setCompression(rosbag::CompressionType::LZ4);
             write_file_version();
         }
 
