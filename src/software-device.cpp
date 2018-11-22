@@ -164,19 +164,20 @@ namespace librealsense
         rs2_extension extension = software_frame.profile->profile->get_stream_type() == RS2_STREAM_DEPTH ?
             RS2_EXTENSION_DEPTH_FRAME : RS2_EXTENSION_VIDEO_FRAME;
 
-        auto frame = _source.alloc_frame(extension, 0, data, false);
+        auto vid_profile = dynamic_cast<video_stream_profile_interface*>(software_frame.profile->profile);
+        auto frame = _source.alloc_frame(extension, vid_profile->get_height() * software_frame.stride, data, false);
         if (!frame)
         {
             return;
         }
-        auto vid_profile = dynamic_cast<video_stream_profile_interface*>(software_frame.profile->profile);
         auto vid_frame = dynamic_cast<video_frame*>(frame);
+        vid_frame->data.assign((uint8_t*)software_frame.pixels, (uint8_t*)software_frame.pixels + (vid_profile->get_height() * software_frame.stride));
         vid_frame->assign(vid_profile->get_width(), vid_profile->get_height(), software_frame.stride, software_frame.bpp * 8);
 
         frame->set_stream(std::dynamic_pointer_cast<stream_profile_interface>(software_frame.profile->profile->shared_from_this()));
-        frame->attach_continuation(frame_continuation{ [=]() {
-            software_frame.deleter(software_frame.pixels);
-        }, software_frame.pixels });
+        //frame->attach_continuation(frame_continuation{ [=]() {
+        //    software_frame.deleter(software_frame.pixels);
+        //}, software_frame.pixels });
         _source.invoke_callback(frame);
     }
 

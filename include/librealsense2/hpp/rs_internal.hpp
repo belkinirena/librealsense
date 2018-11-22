@@ -73,6 +73,8 @@ namespace rs2
     class software_sensor : public sensor
     {
     public:
+
+        software_sensor() {}
         /**
         * Add video stream to software sensor
         *

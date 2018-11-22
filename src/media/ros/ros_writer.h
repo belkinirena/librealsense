@@ -186,8 +186,8 @@ namespace librealsense
             auto size = vid_frame->get_stride() * vid_frame->get_height();
             auto p_data = vid_frame->get_frame_data();
             image.data.assign(p_data, p_data + size);
-            image.header.seq = static_cast<uint32_t>(vid_frame->get_frame_number());
             std::chrono::duration<double, std::milli> timestamp_ms(vid_frame->get_frame_timestamp());
+            image.header.seq = static_cast<uint32_t>(vid_frame->get_frame_number());
             image.header.stamp = ros::Time(std::chrono::duration<double>(timestamp_ms).count());
             std::string TODO_CORRECT_ME = "0";
             image.header.frame_id = TODO_CORRECT_ME;
