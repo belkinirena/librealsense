@@ -7,9 +7,19 @@
 namespace librealsense
 {
     software_device::software_device()
-        : device(std::make_shared<context>(backend_type::standard), {})
+        : device(std::make_shared<context>(backend_type::standard), {}), _depth_stream(new stream(RS2_STREAM_DEPTH)),
+        _ir_stream(new stream(RS2_STREAM_INFRARED)),
+        _color_stream(new stream(RS2_STREAM_COLOR))
     {
         register_info(RS2_CAMERA_INFO_NAME, "Software-Device");
+        //register_stream_to_extrinsic_group(*_depth_stream, 0);
+        //register_stream_to_extrinsic_group(*_color_stream, 0);
+        //register_stream_to_extrinsic_group(*_ir_stream, 0);
+    }
+
+    void software_device::register_stream_extrinsic(stream_interface* s)
+    {
+        register_stream_to_extrinsic_group(*s, 0);
     }
 
     software_sensor& software_device::add_software_sensor(const std::string& name)
@@ -79,7 +89,6 @@ namespace librealsense
         profile->set_unique_id(video_stream.uid);
         profile->set_intrinsics([=]() {return video_stream.intrinsics; });
         _profiles.push_back(profile);
-
         return profile;
     }
 
@@ -178,6 +187,10 @@ namespace librealsense
         //frame->attach_continuation(frame_continuation{ [=]() {
         //    software_frame.deleter(software_frame.pixels);
         //}, software_frame.pixels });
+
+        auto sd = dynamic_cast<software_device*>(_owner);
+        sd->register_stream_extrinsic(vid_profile);
+
         _source.invoke_callback(frame);
     }
 

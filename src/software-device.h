@@ -29,9 +29,14 @@ namespace librealsense
             return markers;
         };
 
+        void register_stream_extrinsic(stream_interface* s);
+
     private:
         std::vector<std::shared_ptr<software_sensor>> _software_sensors;
         rs2_matchers _matcher = RS2_MATCHER_DEFAULT;
+        std::shared_ptr<stream_interface> _depth_stream;
+        std::shared_ptr<stream_interface> _ir_stream;
+        std::shared_ptr<stream_interface> _color_stream;
     };
 
     class software_sensor : public sensor_base

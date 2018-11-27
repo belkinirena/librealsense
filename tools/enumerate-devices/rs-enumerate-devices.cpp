@@ -7,6 +7,7 @@
 #include <map>
 #include <set>
 #include <cstring>
+#include <thread>
 
 #include "tclap/CmdLine.h"
 
@@ -175,7 +176,10 @@ int main(int argc, char** argv) try
 
     // Obtain a list of devices currently present on the system
     context ctx;
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
     auto devices = ctx.query_devices();
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    devices = ctx.query_devices();
     size_t device_count = devices.size();
     if (!device_count)
     {

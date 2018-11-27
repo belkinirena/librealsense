@@ -768,7 +768,7 @@ typedef struct _sw_context
 } sw_context;
 
 sw_context init_sw_device(std::vector<std::vector<rs2::stream_profile>> depth_ir_profiles,
-    std::vector<rs2::video_stream_profile> color_profiles)
+    std::vector<rs2::video_stream_profile> color_profiles, float depth_units)
 {
     sw_context sctx;
     for (auto p1 : depth_ir_profiles)
@@ -780,35 +780,43 @@ sw_context init_sw_device(std::vector<std::vector<rs2::stream_profile>> depth_ir
             auto c = p2.as<rs2::video_stream_profile>();
 
             std::string name = get_sensor_name(c, d);
-            sctx.sw_sensors[name] = sctx.sdev.add_sensor(name);
+            auto sensor = sctx.sdev.add_sensor(name);
 
-            sctx.sw_stream_profiles[name] = get_stream_profiles(sctx.sw_sensors[name], c, d, ir);
+            sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, depth_units);
+            auto profiles = get_stream_profiles(sensor, c, d, ir);
+            sensor.open(profiles);
+            rs2::syncer sync;
+            sensor.start(sync);
 
-            rs2::syncer ssync;
-            sctx.sw_sensors[name].open(sctx.sw_stream_profiles[name]);
-            sctx.sw_sensors[name].start(ssync);
-            sctx.sw_syncers[name] = ssync;
+            sctx.sw_sensors[name] = sensor;
+            sctx.sw_syncers[name] = sync;
+            sctx.sw_stream_profileS[name] = profiles;
         }
     }
     return sctx;
 }
 
-void record_sw_frame(rs2::frameset fs, sw_context sctx)
+rs2_software_video_frame create_sw_frame(const rs2::video_frame& f, rs2::stream_profile profile)
 {
-    auto fd = fs.get_depth_frame();
-    auto fir = fs.get_infrared_frame();
-    auto fc = fs.get_color_frame();
+    rs2_software_video_frame new_frame = {
+        (void*)f.get_data(),
+        [](void*) {},
+        f.get_width() * f.get_bytes_per_pixel(),
+        f.get_bytes_per_pixel(),
+        f.get_timestamp(),
+        f.get_frame_timestamp_domain(),
+        static_cast<int>(f.get_frame_number()),
+        f.get_profile() 
+    };
+    return new_frame;
+}
 
-    auto d = fd.get_profile().as<rs2::video_stream_profile>();
-    auto ir = fir.get_profile().as<rs2::video_stream_profile>();
-    auto c = fc.get_profile().as<rs2::video_stream_profile>();
-
-    auto ss = sctx.sw_sensors[get_sensor_name(c, d)];
-    auto stream_profiles = sctx.sw_stream_profiles[get_sensor_name(c, d)];
-
-    ss.on_video_frame({ (void*)fd.get_data(), [](void*) {}, d.width(), fd.get_bits_per_pixel(), fd.get_timestamp(), fd.get_frame_timestamp_domain(), static_cast<int>(fd.get_frame_number()), stream_profiles[0] });
-    ss.on_video_frame({ (void*)fir.get_data(), [](void*) {}, ir.width(), fir.get_bits_per_pixel(), fir.get_timestamp(), fir.get_frame_timestamp_domain(), static_cast<int>(fir.get_frame_number()), stream_profiles[1] });
-    ss.on_video_frame({ (void*)fc.get_data(), [](void*) {}, c.width(), fc.get_bits_per_pixel(), fc.get_timestamp(), fc.get_frame_timestamp_domain(), static_cast<int>(fc.get_frame_number()), stream_profiles[2] });
+void record_sw_frame(std::string sensor_name, rs2::frameset fs, sw_context sctx)
+{
+    auto ss = sctx.sw_sensors[sensor_name];
+    ss.on_video_frame(create_sw_frame(fs.get_depth_frame(), sctx.sw_stream_profiles[sensor_name][0]));
+    ss.on_video_frame(create_sw_frame(fs.get_infrared_frame(), sctx.sw_stream_profiles[sensor_name][1]));
+    ss.on_video_frame(create_sw_frame(fs.get_color_frame(), sctx.sw_stream_profiles[sensor_name][2]));
 
     ss.stop();
     ss.close();
@@ -880,7 +888,7 @@ TEST_CASE("Record software-device all resolutions", "[software-device][record]")
         }
     }
 
-    auto sctx = init_sw_device(depth_ir_profiles, color_profiles);
+    auto sctx = init_sw_device(depth_ir_profiles, color_profiles, sensors[0].get_option(RS2_OPTION_DEPTH_UNITS));
 
     rs2::recorder recorder("recording.bag", sctx.sdev);
 
@@ -903,8 +911,8 @@ TEST_CASE("Record software-device all resolutions", "[software-device][record]")
                     static int i = 1;
                     std::cout << "Yeah" << i << "\n";
                     i++;
-
-                    record_sw_frame(fs, sctx);
+                    std::string sensor_name = get_sensor_name(fs.get_color_frame().get_profile().as<rs2::video_stream_profile>(), fs.get_depth_frame().get_profile().as<rs2::video_stream_profile>());
+                    record_sw_frame(sensor_name, fs, sctx);
                     break;
                 }
             }
@@ -912,6 +920,7 @@ TEST_CASE("Record software-device all resolutions", "[software-device][record]")
             sensors[1].stop();
             sensors[0].close();
             sensors[1].close();
+
         }
     }
 
@@ -938,14 +947,47 @@ sw_context init_sw_device(std::vector<rs2::sensor> sensors)
         auto c = get_stream_profile(profiles, rs2_stream::RS2_STREAM_COLOR);
 
         std::string name = get_sensor_name(c, d);
-        sctx.sw_sensors[name] = sctx.sdev.add_sensor(name);
+        auto sensor = sctx.sdev.add_sensor(name);
 
-        sctx.sw_stream_profiles[name] = get_stream_profiles(sctx.sw_sensors[name], c, d, ir);;
+        sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, depth_units);
+        auto profiles = get_stream_profiles(sensor, c, d, ir);
+        sensor.open(profiles);
+        rs2::syncer sync;
+        sensor.start(sync);
 
-        rs2::syncer ssync;
-        sctx.sw_sensors[name].open(s.get_stream_profiles());
-        sctx.sw_sensors[name].start(ssync);
-        sctx.sw_syncers[name] = ssync;
+        sctx.sw_sensors[name] = sensor;
+        sctx.sw_syncers[name] = sync;
+        sctx.sw_stream_profiles[name] = profiles;
+    }
+    return sctx;
+}
+
+sw_context init_sw_device(std::vector<rs2::frameset> original_frames, std::vector<rs2::frameset> processed_frames)
+{
+    sw_context sctx;
+    for (int i = 0; i < original_frames.size(); i++)
+    {
+        auto original_frame = original_frames[i];
+        auto processed_frame = processed_frames[i];
+
+        auto original_d = original_frame.get_depth_frame().get_profile().as<rs2::video_stream_profile>();
+        auto original_c = original_frame.get_color_frame().get_profile().as<rs2::video_stream_profile>();
+        std::string name = get_sensor_name(original_c, original_d);
+        auto sensor = sctx.sdev.add_sensor(name);
+
+        auto processed_d = processed_frame.get_depth_frame().get_profile().as<rs2::video_stream_profile>();
+        auto processed_c = processed_frame.get_color_frame().get_profile().as<rs2::video_stream_profile>();
+        auto processed_ir = processed_frame.get_infrared_frame().get_profile().as<rs2::video_stream_profile>();
+
+        sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, depth_units);
+        auto profiles = get_stream_profiles(sensor, processed_c, processed_d, processed_ir);
+        sensor.open(profiles);
+        rs2::syncer sync;
+        sensor.start(sync);
+
+        sctx.sw_sensors[name] = sensor;
+        sctx.sw_syncers[name] = sync;
+        sctx.sw_stream_profiles[name] = profiles;
     }
     return sctx;
 }
@@ -960,10 +1002,8 @@ std::vector<rs2::frameset> get_composite_frames(std::vector<rs2::sensor> sensors
     {
         std::lock_guard<std::mutex> lock(frame_processor_lock);
         frames.push_back(data);
-        std::cout << "new frame " << frames.size() << std::endl;
         if (frames.size() == 3)
         {
-            std::cout << "new frame in" << std::endl;
             source.frame_ready(source.allocate_composite_frame(frames));
             frames.clear();
         }
@@ -982,7 +1022,6 @@ std::vector<rs2::frameset> get_composite_frames(std::vector<rs2::sensor> sensors
             {
                 composite_fs.keep();
                 composite_frames.push_back(composite_fs);
-                std::cout << "recorded frame : " << recorded_frame_size << std::endl;
                 recorded_frame_size++;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -990,17 +1029,14 @@ std::vector<rs2::frameset> get_composite_frames(std::vector<rs2::sensor> sensors
     });
 
     std::mutex sensor_lock;
-    int frames_size = 1;
     for (auto s : sensors)
     {
         s.open(s.get_stream_profiles());
         s.start([&](rs2::frame f)
         {
             std::lock_guard<std::mutex> lock(sensor_lock);
-            std::cout << "sensor :" << frames_size << " frame: " << f.get_profile().stream_name() << ", number: " << f.get_frame_number() << std::endl;
             f.keep();
             frame_processor.invoke(f);
-            frames_size++;
         });
     }
 
@@ -1037,14 +1073,17 @@ TEST_CASE("Play software-device all resolutions", "[software-device][record]")
     rs2::align align(rs2_stream::RS2_STREAM_DEPTH);
     for (auto f : get_composite_frames(sensors))
     {
-        record_sw_frame(align.process(f), sctx);
+        static int i = 0;
+        std::cout << "frame number : " << i++ << std::endl;
+        std::string sensor_name = get_sensor_name(f.get_color_frame().get_profile().as<rs2::video_stream_profile>(), f.get_depth_frame().get_profile().as<rs2::video_stream_profile>());
+        record_sw_frame(sensor_name, align.process(f), sctx);
     }
 }
 
-bool validate_ppf_results(const rs2::frame& result_frame, const rs2::frame& reference_frame, size_t frame_idx, std::string output_file)
+void validate_ppf_results(const rs2::frame& result_frame, const rs2::frame& reference_frame, size_t frame_idx, std::string output_file)
 {
-    std::vector<uint16_t> diff2orig;
-    std::vector<uint16_t> diff2ref;
+    std::vector<uint8_t> diff2orig;
+    std::vector<uint8_t> diff2ref;
 
     // Basic sanity scenario with no filters applied.
     // validating domain transform in/out conversion. Requiring input=output
@@ -1064,39 +1103,26 @@ bool validate_ppf_results(const rs2::frame& result_frame, const rs2::frame& refe
     REQUIRE(result_profile.width() == reference_profile.width());
     REQUIRE(result_profile.height() == reference_profile.height());
 
-    auto pixels = result_profile.width()*result_profile.height();
-    diff2ref.resize(pixels);
+    auto pixels_as_bytes = reference_frame.as<rs2::video_frame>().get_bytes_per_pixel() * result_profile.width() * result_profile.height();
+    diff2ref.resize(pixels_as_bytes);
 
     // Pixel-by-pixel comparison of the resulted filtered depth vs data ercorded with external tool
-    auto v1 = reinterpret_cast<const uint16_t*>(result_frame.get_data());
-    auto v2 = reinterpret_cast<const uint16_t*>(reference_frame.get_data());
+    auto v1 = reinterpret_cast<const uint8_t*>(result_frame.get_data());
+    auto v2 = reinterpret_cast<const uint8_t*>(reference_frame.get_data());
 
-    for (auto i = 0; i < pixels; i++)
+    for (auto i = 0; i < pixels_as_bytes; i++)
     {
-        if (i == 620192 || i == 531184)
-        {
-            auto v11 = *v1;
-            auto v22 = *v2;
-        }
-        uint16_t diff = std::abs(*v1++ - *v2++);
-        diff2ref[i] = diff;
+        //uint8_t diff = std::abs(*v1++ - *v2++);
+        REQUIRE(*v1++ == *v2++);
+        //diff2ref[i] = diff;
     }
 
     // Validate the filters
     // The differences between the reference code and librealsense implementation are byte-compared below
-    return profile_diffs(output_file/*"./Filterstransform.txt"*/, diff2ref, 0.f, 0, frame_idx);
+    //return profile_diffs(output_file, diff2ref, 0.f, 0, frame_idx);
 }
 
-void saveImage(rs2::video_frame& frame, std::string header)
-{
-    std::ofstream save_file("Image_" + header +
-        ".pgm", std::ofstream::binary);
 
-    std::string pgm_header = "P5 " + header + " 255\n";
-    save_file.write(pgm_header.c_str(), pgm_header.size());
-    save_file.write((char*)frame.get_data(), frame.get_height() * frame.get_width() * frame.get_bits_per_pixel());
-    save_file.close();
-}
 
 TEST_CASE("Compare software-device all resolutions", "[software-device][record]")
 {
@@ -1122,12 +1148,10 @@ TEST_CASE("Compare software-device all resolutions", "[software-device][record]"
     {
         //compare
         auto fs_res = align.process(frames[i]);
-        saveImage(frames[i].get_depth_frame(), "orig");
-        saveImage(fs_res.get_depth_frame(), "res");
-        saveImage(res_frames[i].get_depth_frame(), "ref");
-        validate_ppf_results(fs_res.get_depth_frame(), res_frames[i].get_depth_frame(), i, "./align.txt");
-        validate_ppf_results(fs_res.get_color_frame(), res_frames[i].get_color_frame(), i, "./align.txt");
-        validate_ppf_results(fs_res.get_infrared_frame(), res_frames[i].get_infrared_frame(), i, "./align.txt");
+
+        validate_ppf_results(fs_res.get_depth_frame(), res_frames[i].get_depth_frame(), i, "./depth_align.txt");
+        validate_ppf_results(fs_res.get_color_frame(), res_frames[i].get_color_frame(), i, "./color_align.txt");
+        validate_ppf_results(fs_res.get_infrared_frame(), res_frames[i].get_infrared_frame(), i, "./ir_align.txt");
 
     }
 }
