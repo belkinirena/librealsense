@@ -74,10 +74,12 @@ namespace librealsense
 
         void tag_profiles(stream_profiles profiles) const override;
 
+        void register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t groupd_index);
+
     protected:
         int add_sensor(std::shared_ptr<sensor_interface> sensor_base);
         int assign_sensor(std::shared_ptr<sensor_interface> sensor_base, uint8_t idx);
-        void register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t groupd_index);
+        
         uvc_sensor& get_uvc_sensor(int subdevice);
 
         explicit device(std::shared_ptr<context> ctx,

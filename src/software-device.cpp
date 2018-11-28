@@ -12,14 +12,6 @@ namespace librealsense
         _color_stream(new stream(RS2_STREAM_COLOR))
     {
         register_info(RS2_CAMERA_INFO_NAME, "Software-Device");
-        //register_stream_to_extrinsic_group(*_depth_stream, 0);
-        //register_stream_to_extrinsic_group(*_color_stream, 0);
-        //register_stream_to_extrinsic_group(*_ir_stream, 0);
-    }
-
-    void software_device::register_stream_extrinsic(stream_interface* s)
-    {
-        register_stream_to_extrinsic_group(*s, 0);
     }
 
     software_sensor& software_device::add_software_sensor(const std::string& name)
@@ -49,6 +41,7 @@ namespace librealsense
         : sensor_base(name, owner)
     {
         _metadata_parsers = md_constant_parser::create_metadata_parser_map();
+        _unique_id = unique_id::generate_id();
     }
 
     std::shared_ptr<matcher> software_device::create_matcher(const frame_holder& frame) const
@@ -189,8 +182,7 @@ namespace librealsense
         //}, software_frame.pixels });
 
         auto sd = dynamic_cast<software_device*>(_owner);
-        sd->register_stream_extrinsic(vid_profile);
-
+        sd->register_stream_to_extrinsic_group(*vid_profile, _unique_id);
         _source.invoke_callback(frame);
     }
 

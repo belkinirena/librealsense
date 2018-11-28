@@ -29,8 +29,6 @@ namespace librealsense
             return markers;
         };
 
-        void register_stream_extrinsic(stream_interface* s);
-
     private:
         std::vector<std::shared_ptr<software_sensor>> _software_sensors;
         rs2_matchers _matcher = RS2_MATCHER_DEFAULT;
@@ -62,6 +60,7 @@ namespace librealsense
         friend class software_device;
         stream_profiles _profiles;
         std::map<rs2_frame_metadata_value, rs2_metadata_type> _metadata_map;
+        int _unique_id;
 
     };
     MAP_EXTENSION(RS2_EXTENSION_SOFTWARE_SENSOR, software_sensor);
