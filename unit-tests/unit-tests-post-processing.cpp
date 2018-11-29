@@ -594,38 +594,33 @@ std::string get_sensor_name(rs2::video_stream_profile c, rs2::video_stream_profi
     return name;
 }
 
-std::vector<rs2::stream_profile> init_stream_profiles(sw_context& sctx, rs2::software_sensor ss, std::string sensor_name, rs2::video_stream_profile c, rs2::video_stream_profile d, rs2::video_stream_profile ir)
+std::vector<rs2::stream_profile> init_stream_profiles(sw_context& sctx, rs2::software_sensor ss, std::string sensor_name, rs2::video_stream_profile c, rs2::video_stream_profile d)
 {
     sctx.sw_stream_profiles[sensor_name][RS2_STREAM_DEPTH] = get_stream_profile(ss, d);
     sctx.sw_stream_profiles[sensor_name][RS2_STREAM_COLOR] = get_stream_profile(ss, c);
-    sctx.sw_stream_profiles[sensor_name][RS2_STREAM_INFRARED] = get_stream_profile(ss, ir);
     std::vector<rs2::stream_profile> profiles = {
         sctx.sw_stream_profiles[sensor_name][RS2_STREAM_DEPTH],
-        sctx.sw_stream_profiles[sensor_name][RS2_STREAM_COLOR],
-        sctx.sw_stream_profiles[sensor_name][RS2_STREAM_INFRARED]
+        sctx.sw_stream_profiles[sensor_name][RS2_STREAM_COLOR]
     };
-
     return profiles;
 }
 
-sw_context init_sw_device(std::vector<std::vector<rs2::stream_profile>> depth_ir_profiles,
+sw_context init_sw_device(std::vector<rs2::video_stream_profile> depth_profiles,
     std::vector<rs2::video_stream_profile> color_profiles, float depth_units)
 {
     sw_context sctx;
-    for (auto p1 : depth_ir_profiles)
+    for (auto depth_profile : depth_profiles)
     {
-        for (auto p2 : color_profiles)
+        for (auto color_profile : color_profiles)
         {
-            auto d = p1[0].as<rs2::video_stream_profile>();
-            auto ir = p1[1].as<rs2::video_stream_profile>();
-            auto c = p2.as<rs2::video_stream_profile>();
-
-            std::string name = get_sensor_name(c, d);
+            if (depth_profile.width() == color_profile.width() && depth_profile.height() == color_profile.height())
+                continue;
+            std::string name = get_sensor_name(color_profile, depth_profile);
             auto sensor = sctx.sdev.add_sensor(name);
 
             sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, depth_units);
 
-            sensor.open(init_stream_profiles(sctx, sensor, name, c, d, ir));
+            sensor.open(init_stream_profiles(sctx, sensor, name, color_profile, depth_profile));
             rs2::syncer sync;
             sensor.start(sync);
 
@@ -655,7 +650,6 @@ void record_sw_frame(std::string sensor_name, rs2::frameset fs, sw_context sctx)
 {
     auto ss = sctx.sw_sensors[sensor_name];
     ss.on_video_frame(create_sw_frame(fs.get_depth_frame(), fs.get_depth_frame().get_profile().as<rs2::video_stream_profile>()));
-    ss.on_video_frame(create_sw_frame(fs.get_infrared_frame(), fs.get_infrared_frame().get_profile().as<rs2::video_stream_profile>()));
     ss.on_video_frame(create_sw_frame(fs.get_color_frame(), fs.get_color_frame().get_profile().as<rs2::video_stream_profile>()));
 
     ss.stop();
@@ -670,72 +664,51 @@ TEST_CASE("Record software-device all resolutions", "[software-device][record]")
 
     auto dev = ctx.query_devices()[0];
     auto sensors = dev.query_sensors();
-    auto all_depth_ir_profiles = sensors[0].get_stream_profiles();
 
-    std::vector<rs2::video_stream_profile> filtered_depth_profiles;
-    for (auto p : all_depth_ir_profiles)
+    std::vector<rs2::video_stream_profile> depth_profiles;
+    for (auto p : sensors[0].get_stream_profiles())
     {
         if (p.stream_type() == rs2_stream::RS2_STREAM_DEPTH)
         {
             auto pv = p.as<rs2::video_stream_profile>();
-            if (!std::any_of(filtered_depth_profiles.begin(), filtered_depth_profiles.end(), [&](rs2::video_stream_profile i)
+            if (!std::any_of(depth_profiles.begin(), depth_profiles.end(), [&](rs2::video_stream_profile i)
             {
                 return i.height() == pv.height() && i.width() == pv.width() && i.format() == pv.format();
             }))
             {
-                filtered_depth_profiles.push_back(pv);
+                depth_profiles.push_back(pv);
             }
         }
     }
 
-    std::vector<std::vector<rs2::stream_profile>> filtered_depth_ir_profiles;
-    for (auto d : filtered_depth_profiles)
+    std::vector<rs2::video_stream_profile> color_profiles;
+    for (auto p : sensors[1].get_stream_profiles())
     {
-        for (auto p : all_depth_ir_profiles)
-        {
-            if (p.stream_type() == rs2_stream::RS2_STREAM_INFRARED && p.stream_index() == 1)
-            {
-                auto pv = p.as<rs2::video_stream_profile>();
-                if (d.height() == pv.height() && d.width() == pv.width())
-                {
-                    std::vector<rs2::stream_profile> tmp;
-                    tmp.push_back(d);
-                    tmp.push_back(pv);
-                    filtered_depth_ir_profiles.push_back(tmp);
-                    break;
-                }
-            }
-        }
-    }
-
-    auto all_color_profiles = sensors[1].get_stream_profiles();
-    std::vector<rs2::video_stream_profile> filtered_color_profiles;
-    for (auto p : all_color_profiles)
-    {
-        if (p.stream_type() == rs2_stream::RS2_STREAM_COLOR && p.format() == rs2_format::RS2_FORMAT_YUYV)
+        if (p.stream_type() == rs2_stream::RS2_STREAM_COLOR)
         {
             auto pv = p.as<rs2::video_stream_profile>();
-            if (!std::any_of(filtered_color_profiles.begin(), filtered_color_profiles.end(), [&](rs2::video_stream_profile i)
+            if (!std::any_of(color_profiles.begin(), color_profiles.end(), [&](rs2::video_stream_profile i)
             {
-                return i.height() == pv.height() &&
-                    i.width() == pv.width();
+                return i.height() == pv.height() && i.width() == pv.width() && i.format() == pv.format();
             }))
             {
-                filtered_color_profiles.push_back(pv);
+                color_profiles.push_back(pv);
             }
         }
     }
 
-    auto sctx = init_sw_device(filtered_depth_ir_profiles, filtered_color_profiles, sensors[0].get_option(RS2_OPTION_DEPTH_UNITS));
+    auto sctx = init_sw_device(depth_profiles, color_profiles, sensors[0].get_option(RS2_OPTION_DEPTH_UNITS));
 
-    rs2::recorder recorder("all_resolutions_DEPTH_Z16_IR_Y8_COLOR_YUYV.bag", sctx.sdev);
+    rs2::recorder recorder("all_combinations_depth_color.bag", sctx.sdev);
 
-    for (auto depth_ir_profiles : filtered_depth_ir_profiles)
+    for (auto depth_profile : depth_profiles)
     {
-        for (auto color_profile : filtered_color_profiles)
+        for (auto color_profile : color_profiles)
         {
+            if (depth_profile.width() == color_profile.width() && depth_profile.height() == color_profile.height())
+                continue;
             rs2::syncer sync;
-            sensors[0].open(depth_ir_profiles);
+            sensors[0].open(depth_profile);
             sensors[1].open(color_profile);
 
             sensors[0].start(sync);
@@ -743,12 +716,11 @@ TEST_CASE("Record software-device all resolutions", "[software-device][record]")
 
             while (true)
             {
-                auto fs = sync.wait_for_frames(200);
-                if (fs.size() == 3)
+                auto fs = sync.wait_for_frames();
+                if (fs.size() == 2)
                 {
-                    auto color_video_stream_profile = fs.get_color_frame().get_profile().as<rs2::video_stream_profile>();
-                    auto depth_video_stream_profile = fs.get_depth_frame().get_profile().as<rs2::video_stream_profile>();
-                    std::string sensor_name = get_sensor_name(color_video_stream_profile, depth_video_stream_profile);
+                    std::cout << "Recording : " << "Depth : " << depth_profile.width() << "x" << depth_profile.height() << ", Color : " << color_profile.width() << "x" << color_profile.height() << std::endl;
+                    std::string sensor_name = get_sensor_name(color_profile, depth_profile);
                     record_sw_frame(sensor_name, fs, sctx);
                     break;
                 }
@@ -765,22 +737,14 @@ void register_extrinsics_from_frame(rs2::frameset from_frame, sw_context sctx, s
 {
     auto depth_frame = from_frame.get_depth_frame().get_profile().as<rs2::video_stream_profile>();
     auto color_frame = from_frame.get_color_frame().get_profile().as<rs2::video_stream_profile>();
-    auto ir_frame = from_frame.get_infrared_frame().get_profile().as<rs2::video_stream_profile>();
 
     auto depth_stream = sctx.sw_stream_profiles[sensor_name][RS2_STREAM_DEPTH];
     auto color_stream = sctx.sw_stream_profiles[sensor_name][RS2_STREAM_COLOR];
-    auto ir_stream = sctx.sw_stream_profiles[sensor_name][RS2_STREAM_INFRARED];
 
     depth_stream.register_extrinsics_to(depth_stream, depth_frame.get_extrinsics_to(depth_frame));
-    depth_stream.register_extrinsics_to(ir_stream, depth_frame.get_extrinsics_to(ir_frame));
     depth_stream.register_extrinsics_to(color_stream, depth_frame.get_extrinsics_to(color_frame));
 
-    ir_stream.register_extrinsics_to(depth_stream, ir_frame.get_extrinsics_to(depth_frame));
-    ir_stream.register_extrinsics_to(ir_stream, ir_frame.get_extrinsics_to(ir_frame));
-    ir_stream.register_extrinsics_to(color_stream, ir_frame.get_extrinsics_to(color_frame));
-
     color_stream.register_extrinsics_to(depth_stream, color_frame.get_extrinsics_to(depth_frame));
-    color_stream.register_extrinsics_to(ir_stream, color_frame.get_extrinsics_to(ir_frame));
     color_stream.register_extrinsics_to(color_stream, color_frame.get_extrinsics_to(color_frame));
 }
 
@@ -800,10 +764,9 @@ sw_context init_sw_device(std::vector<rs2::frameset> original_frames, std::vecto
 
         auto processed_d = processed_frame.get_depth_frame().get_profile().as<rs2::video_stream_profile>();
         auto processed_c = processed_frame.get_color_frame().get_profile().as<rs2::video_stream_profile>();
-        auto processed_ir = processed_frame.get_infrared_frame().get_profile().as<rs2::video_stream_profile>();
 
         sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, depth_units);
-        auto profiles = init_stream_profiles(sctx, sensor, name, processed_c, processed_d, processed_ir);
+        auto profiles = init_stream_profiles(sctx, sensor, name, processed_c, processed_d);
 
         register_extrinsics_from_frame(processed_frame, sctx, name);
 
@@ -827,10 +790,8 @@ std::vector<rs2::frameset> get_composite_frames(std::vector<rs2::sensor> sensors
     {
         std::lock_guard<std::mutex> lock(frame_processor_lock);
         frames.push_back(data);
-        std::cout << "data ready " << std::endl;
-        if (frames.size() == 3)
+        if (frames.size() == 2)
         {
-            std::cout << "ready " << std::endl;
             source.frame_ready(source.allocate_composite_frame(frames));
             frames.clear();
         }
@@ -848,24 +809,19 @@ std::vector<rs2::frameset> get_composite_frames(std::vector<rs2::sensor> sensors
             {
                 composite_fs.keep();
                 composite_frames.push_back(composite_fs);
-                std::cout << "composite frames size : " << composite_frames.size() << std::endl;
+                std::cout << "Playing : " << "Depth : " << composite_fs.get_depth_frame().get_width() << "x" << composite_fs.get_depth_frame().get_height() << 
+                    ", Color : " << composite_fs.get_color_frame().get_width() << "x" << composite_fs.get_color_frame().get_height() << std::endl;
             }
         }
     });
 
     std::cout << "sensors size : " << sensors.size() << std::endl;
 
-    std::mutex sensor_lock;
-    int i = 1;
-
     for (auto s : sensors)
     {
         s.open(s.get_stream_profiles());
         s.start([&](rs2::frame f)
         {
-            //std::lock_guard<std::mutex> lock(sensor_lock);
-            //std::cout << "frames size : " << i++ << std::endl;
-            f.keep();
             frame_processor.invoke(f);
         });
     }
@@ -886,20 +842,19 @@ void record_processed_sw_frame(std::string sensor_name, rs2::frameset fs, sw_con
 {
     auto ss = sctx.sw_sensors[sensor_name];
     ss.on_video_frame(create_sw_frame(fs.get_depth_frame(), sctx.sw_stream_profiles[sensor_name][RS2_STREAM_DEPTH]));
-    ss.on_video_frame(create_sw_frame(fs.get_infrared_frame(), sctx.sw_stream_profiles[sensor_name][RS2_STREAM_INFRARED]));
     ss.on_video_frame(create_sw_frame(fs.get_color_frame(), sctx.sw_stream_profiles[sensor_name][RS2_STREAM_COLOR]));
 
     ss.stop();
     ss.close();
 }
 
-TEST_CASE("Play software-device all resolutions", "[software-device][record]")
+void record_align_frames_all_res(rs2_stream stream, std::string file)
 {
     rs2::context ctx;
     if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
         return;
 
-    auto dev = ctx.load_device("All_resolutions_Depth_Z16_IR_Y8_Color_YUYV.bag");
+    auto dev = ctx.load_device("all_combinations_depth_color.bag");
     dev.set_real_time(false);
     std::cout << "Recording was loaded" << std::endl;
     std::vector<rs2::sensor> sensors = dev.query_sensors();
@@ -907,7 +862,7 @@ TEST_CASE("Play software-device all resolutions", "[software-device][record]")
     std::cout << "Recieved all recorded composite frames" << std::endl;
 
     std::vector<rs2::frameset> processed_frames;
-    rs2::align align(rs2_stream::RS2_STREAM_DEPTH);
+    rs2::align align(stream);
     for (auto f : original_frames)
     {
         auto processed_frame = align.process(f);
@@ -917,12 +872,15 @@ TEST_CASE("Play software-device all resolutions", "[software-device][record]")
     std::cout << "All frames were processed" << std::endl;
 
     auto sctx = init_sw_device(original_frames, processed_frames);
-    rs2::recorder recorder("Aligned_All_resolutions_Depth_Z16_IR_Y8_Color_YUYV.bag", sctx.sdev);
+    rs2::recorder recorder(file, sctx.sdev);
 
-    for (int i = 0; i < processed_frames.size(); i ++)
+    std::cout << "SW device initilized" << std::endl;
+
+    for (int i = 0; i < processed_frames.size(); i++)
     {
-        std::string sensor_name = get_sensor_name(original_frames[i].get_color_frame().get_profile().as<rs2::video_stream_profile>(),
-            original_frames[i].get_depth_frame().get_profile().as<rs2::video_stream_profile>());
+        auto color_stream_profile = original_frames[i].get_color_frame().get_profile().as<rs2::video_stream_profile>();
+        auto depth_stream_profile = original_frames[i].get_depth_frame().get_profile().as<rs2::video_stream_profile>();
+        std::string sensor_name = get_sensor_name(color_stream_profile, depth_stream_profile);
         record_processed_sw_frame(sensor_name, processed_frames[i], sctx);
     }
     std::cout << "All frames were recorded" << std::endl;
@@ -933,6 +891,16 @@ TEST_CASE("Play software-device all resolutions", "[software-device][record]")
         s.close();
     }
     std::cout << "Done" << std::endl;
+}
+
+TEST_CASE("Record align color to depth software-device all resolutions", "[software-device][record]")
+{
+    record_align_frames_all_res(RS2_STREAM_DEPTH, "[aligned_2d]_all_combinations_depth_color.bag");
+}
+
+TEST_CASE("Record align depth to color software-device all resolutions", "[software-device][record]")
+{
+    record_align_frames_all_res(RS2_STREAM_COLOR, "[aligned_2c]_all_combinations_depth_color.bag");
 }
 
 void validate_ppf_results(const rs2::frame& result_frame, const rs2::frame& reference_frame)
@@ -959,49 +927,65 @@ void validate_ppf_results(const rs2::frame& result_frame, const rs2::frame& refe
     REQUIRE(std::memcmp(v1, v2, pixels_as_bytes) == 0);
 }
 
-const std::vector<std::string> align_test_cases = {
-    "All_resolutions_Depth_Z16_IR_Y8_Color_YUYV"
+const std::vector<std::pair<rs2_stream, std::string>> align_test_cases = {
+    { RS2_STREAM_DEPTH, "[aligned_2d]_all_combinations_depth_color.bag" },
+    { RS2_STREAM_COLOR, "[aligned_2c]_all_combinations_depth_color.bag" }
 };
 
-TEST_CASE("Compare software-device all resolutions", "[software-device][record]")
+void compare_aligned_frames_vs_recorded_frames(rs2_stream stream, std::string file)
 {
-    for (auto test_case : align_test_cases)
+    rs2::context ctx;
+    if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
+        return;
+
+    auto ref_dev = ctx.load_device(file);
+    ref_dev.set_real_time(false);
+
+    std::vector<rs2::sensor> ref_sensors = ref_dev.query_sensors();
+    auto ref_frames = get_composite_frames(ref_sensors);
+
+    auto dev = ctx.load_device("all_combinations_depth_color.bag");
+    dev.set_real_time(false);
+
+    std::vector<rs2::sensor> sensors = dev.query_sensors();
+    auto frames = get_composite_frames(sensors);
+
+    rs2::align align(stream);
+    for (int i = 0; i < frames.size(); i++)
     {
-        rs2::context ctx;
-        if (!make_context(SECTION_FROM_TEST_NAME, &ctx))
-            return;
-        auto dev = ctx.load_device(test_case + ".bag");
-        dev.set_real_time(false);
+        auto started = std::chrono::high_resolution_clock::now();
+        auto fs_res = align.process(frames[i]);
+        auto done = std::chrono::high_resolution_clock::now();
+        auto d = frames[i].get_depth_frame().get_profile().as<rs2::video_stream_profile>();
+        auto c = frames[i].get_color_frame().get_profile().as<rs2::video_stream_profile>();
+        std::cout << "DEPTH " << std::setw(6) << d.format() << " " << std::setw(8) << d.width() << "x" << d.height() << " | " <<
+                     "COLOR " << std::setw(6) << c.format() << " " << std::setw(8) << c.width() << "x" << c.height() << " [" <<
+                     std::chrono::duration_cast<std::chrono::nanoseconds>(done - started).count() << " ns]" << std::endl;
+        validate_ppf_results(fs_res.get_depth_frame(), ref_frames[i].get_depth_frame());
+        validate_ppf_results(fs_res.get_color_frame(), ref_frames[i].get_color_frame());
+    }
 
-        std::vector<rs2::sensor> sensors = dev.query_sensors();
-        auto frames = get_composite_frames(sensors);
+    for (auto s : sensors)
+    {
+        s.stop();
+        s.close();
+    }
 
-        auto ref_dev = ctx.load_device("Aligned_" + test_case + ".bag");
-        dev.set_real_time(false);
-
-        std::vector<rs2::sensor> ref_sensors = ref_dev.query_sensors();
-
-        auto ref_frames = get_composite_frames(ref_sensors);
-
-        rs2::align align(rs2_stream::RS2_STREAM_DEPTH);
-        for (int i = 0; i < frames.size(); i++)
-        {
-            auto fs_res = align.process(frames[i]);
-            validate_ppf_results(fs_res.get_depth_frame(), ref_frames[i].get_depth_frame());
-            validate_ppf_results(fs_res.get_color_frame(), ref_frames[i].get_color_frame());
-            validate_ppf_results(fs_res.get_infrared_frame(), ref_frames[i].get_infrared_frame());
-        }
-
-        for (auto s : sensors)
-        {
-            s.stop();
-            s.close();
-        }
-
-        for (auto s : ref_sensors)
-        {
-            s.stop();
-            s.close();
-        }
+    for (auto s : ref_sensors)
+    {
+        s.stop();
+        s.close();
     }
 }
+
+TEST_CASE("test align color to depth from recording", "[software-device][record]")
+{
+    compare_aligned_frames_vs_recorded_frames(RS2_STREAM_DEPTH, "[aligned_2d]_all_combinations_depth_color.bag");
+}
+
+TEST_CASE("test align depth to color from recording", "[software-device][record]")
+{
+    compare_aligned_frames_vs_recorded_frames(RS2_STREAM_COLOR, "[aligned_2c]_all_combinations_depth_color.bag");
+}
+
+
