@@ -366,6 +366,9 @@ void compare_processed_frames_vs_recorded_frames(processing_recordable_block& re
     ref_dev.set_real_time(false);
 
     std::vector<rs2::sensor> ref_sensors = ref_dev.query_sensors();
+    CAPTURE(ref_sensors.size());
+    CAPTURE(sensors.size());
+    REQUIRE(ref_sensors.size() == sensors.size());
     auto ref_frames = get_frames(ref_sensors);
     CAPTURE(ref_frames.size());
     CAPTURE(frames.size());
